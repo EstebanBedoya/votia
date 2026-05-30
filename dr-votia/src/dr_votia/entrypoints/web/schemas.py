@@ -16,6 +16,17 @@ from dr_votia.domain.models import (
 )
 
 
+class UsageResponse(BaseModel):
+    """OpenRouter credit usage — powers the 'ENERGÍA' gauge."""
+
+    total: float = Field(description="Total purchased credits.")
+    used: float = Field(description="Credits consumed so far.")
+    remaining: float = Field(description="Credits left.")
+    pct: float | None = Field(
+        default=None, description="Remaining as a percentage (None if no credit cap)."
+    )
+
+
 class ChatRequest(BaseModel):
     pregunta: str = Field(min_length=1, description="La pregunta del usuario.")
     k: int = Field(default=5, ge=1, le=20)

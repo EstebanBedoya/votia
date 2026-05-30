@@ -18,7 +18,7 @@ from dr_votia.application.score_candidates import ScoreCandidates
 from dr_votia.config import Settings
 from dr_votia.domain.ports import DocumentReader, ScoreRepository, SessionStore
 from dr_votia.infrastructure.embeddings.voyage import VoyageEmbeddings
-from dr_votia.infrastructure.llm.openrouter import OpenRouterLLM
+from dr_votia.infrastructure.llm.openrouter import OpenRouterBilling, OpenRouterLLM
 from dr_votia.infrastructure.readers.pdf import PdfReader
 from dr_votia.infrastructure.readers.text import TextReader
 from dr_votia.infrastructure.readers.xlsx import XlsxReader
@@ -42,6 +42,7 @@ class Container:
     score_repo: ScoreRepository
     sessions: SessionStore
     rate_limiter: RateLimiter
+    billing: OpenRouterBilling
 
 
 def build_container(settings: Settings | None = None) -> Container:
@@ -80,6 +81,7 @@ def build_container(settings: Settings | None = None) -> Container:
         base_url=settings.openrouter_base_url,
         max_tokens=256,
     )
+    billing = OpenRouterBilling(api_key, base_url=settings.openrouter_base_url)
     refiner = QueryRefiner(query_llm)
     # Guardrail rides the same cheap model — its scope check is also light work.
     guardrail = Guardrail(query_llm)
@@ -115,4 +117,5 @@ def build_container(settings: Settings | None = None) -> Container:
         score_repo=score_repo,
         sessions=sessions,
         rate_limiter=rate_limiter,
+        billing=billing,
     )

@@ -8,6 +8,7 @@ without touching this code.
 
 from __future__ import annotations
 
+import httpx
 from openai import OpenAI
 
 DEFAULT_BASE_URL = "https://openrouter.ai/api/v1"
@@ -41,3 +42,35 @@ class OpenRouterLLM:
             ],
         )
         return response.choices[0].message.content or ""
+
+
+class OpenRouterBilling:
+    """Reads account credit usage from OpenRouter's billing endpoint.
+
+    Powers the "ENERGÍA" gauge: how much of the purchased credit budget is left.
+    Distinct from the chat client — it talks to the REST billing API, not the
+    OpenAI-compatible completions surface.
+    """
+
+    def __init__(self, api_key: str, *, base_url: str = DEFAULT_BASE_URL) -> None:
+        self._api_key = api_key
+        self._base_url = base_url.rstrip("/")
+
+    def credits(self) -> dict[str, float | None]:
+        """Return total/used/remaining credits and the remaining percentage.
+
+        ``pct`` is ``None`` when the account has no purchased credit cap (so the
+        UI can show "N/D" instead of a misleading empty bar).
+        """
+        resp = httpx.get(
+            f"{self._base_url}/credits",
+            headers={"Authorization": f"Bearer {self._api_key}"},
+            timeout=10.0,
+        )
+        resp.raise_for_status()
+        data = resp.json().get("data", {})
+        total = float(data.get("total_credits") or 0.0)
+        used = float(data.get("total_usage") or 0.0)
+        remaining = max(0.0, total - used)
+        pct = round(remaining / total * 100.0, 1) if total > 0 else None
+        return {"total": total, "used": used, "remaining": remaining, "pct": pct}

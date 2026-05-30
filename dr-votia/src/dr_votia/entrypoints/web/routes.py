@@ -21,6 +21,7 @@ from dr_votia.entrypoints.web.schemas import (
     ChatRequest,
     ChatResponse,
     RadarResponse,
+    UsageResponse,
 )
 
 router = APIRouter()
@@ -29,6 +30,12 @@ router = APIRouter()
 @router.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
+
+
+@router.get("/usage", response_model=UsageResponse)
+def usage(container: ContainerDep) -> UsageResponse:
+    """OpenRouter credit usage for the 'ENERGÍA' gauge."""
+    return UsageResponse(**container.billing.credits())
 
 
 @router.post("/chat", response_model=ChatResponse)
