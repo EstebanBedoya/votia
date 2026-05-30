@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Plataforma de análisis de propuestas electorales Colombia 2026 — Fundación para el Estado de Derecho" />
+  <title>Propuestas de los candidatos presidenciales 2026</title>
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="Propuestas de los candidatos presidenciales 2026 — FEDe" />
+  <meta property="og:description" content="Analice y compare las propuestas de los candidatos presidenciales en cinco sectores clave, con alertas identificadas por expertos." />
+  <meta property="og:image" content="https://propuestascandidatos.fedecolombia.org/img/propuestas-thumbnail.jpg" />
+  <meta property="og:url" content="https://propuestascandidatos.fedecolombia.org" />
+  <meta property="og:type" content="website" />
+  <meta property="og:locale" content="es_CO" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Propuestas de los candidatos presidenciales 2026 — FEDe" />
+  <meta name="twitter:description" content="Analice y compare las propuestas de los candidatos presidenciales en cinco sectores clave, con alertas identificadas por expertos." />
+  <meta name="twitter:image" content="https://propuestascandidatos.fedecolombia.org/img/propuestas-thumbnail.jpg" />
+
+  <!-- Privacy-friendly analytics by Plausible -->
+  <script async src="https://plausible.io/js/pa-zBm3J4RpGVOksiUTMnpqi.js"></script>
+  <script>
+    window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};
+    plausible.init()
+  </script>
+
+  <link rel="icon" href="img/logo-fede.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- ── LOADING SCREEN ─────────────────────────────── -->
+  <div id="loading-screen" aria-label="Cargando" role="status">
+    <img src="img/logo-fede.svg" class="loading-logo" aria-hidden="true" alt="">
+    <span class="loading-text">Cargando datos…</span>
+  </div>
+
+  <!-- ── NAVIGATION ────────────────────────────────── -->
+  <nav role="navigation" aria-label="Navegación principal">
+    <button class="nav-logo" onclick="App.goHome()" aria-label="Inicio — Semáforo de la Campaña">
+      <img src="img/logo-fede.svg" alt="" aria-hidden="true" class="nav-logo-img">
+      <div class="nav-wordmark">
+        <div class="nav-title">Propuestas de los candidatos</div>
+        <div class="nav-subtitle">Comentadas por expertos</div>
+      </div>
+    </button>
+
+    <div class="nav-right">
+      <button class="nav-link" onclick="App.showMetodologia()">Metodología</button>
+    </div>
+  </nav>
+
+  <!-- ── ERROR BANNER ───────────────────────────────── -->
+  <div id="error-banner" role="alert" aria-live="assertive"></div>
+
+  <!-- ══════════════════════════════════════════════════
+       PAGE: HOME
+  ═══════════════════════════════════════════════════ -->
+  <div id="page-home" class="page active">
+
+    <header class="home-header">
+      <div class="dot-grid" id="dot-grid" aria-hidden="true"></div>
+      <div class="home-header-content">
+        <div class="year-badge">Elecciones 2026</div>
+        <h1>Las propuestas de los candidatos presidenciales<br>y las alertas identificadas por expertos</h1>
+        <p>Analice y compare en un solo lugar los programas en cinco temas clave. Encuentre las amenazas identificadas por expertos en los diferentes sectores y para el Estado de Derecho.</p>
+      </div>
+    </header>
+
+    <main>
+      <p class="home-instructions">Haga clic en un candidato para ver sus propuestas</p>
+      <div class="candidates-grid" id="candidates-grid" role="list"
+           aria-label="Candidatos presidenciales">
+      </div>
+
+      <section class="sectores-section" id="sectores-section" aria-label="Explorar por sector">
+        <div class="sectores-section-inner">
+          <h2 class="sectores-section-title">O explore las propuestas por sector</h2>
+          <div class="sectores-grid" id="sectores-grid" role="list"
+               aria-label="Sectores temáticos"></div>
+        </div>
+      </section>
+    </main>
+
+  </div>
+
+  <!-- ══════════════════════════════════════════════════
+       PAGE: PROFILE
+  ═══════════════════════════════════════════════════ -->
+  <div id="page-profile" class="page">
+
+    <!-- Breadcrumb -->
+    <div class="breadcrumb" role="navigation" aria-label="Navegación de ruta">
+      <button class="breadcrumb-link" onclick="App.goHome()">Inicio</button>
+      <span class="breadcrumb-sep" aria-hidden="true">›</span>
+      <span id="breadcrumb-name" class="breadcrumb-current"></span>
+    </div>
+
+    <!-- Header del candidato -->
+    <header class="profile-header" id="profile-header">
+      <div class="profile-inner">
+        <div class="profile-top">
+          <div class="profile-photo-col">
+            <div id="profile-avatar" aria-hidden="true"></div>
+          </div>
+          <div class="profile-info">
+            <h1 id="profile-name"></h1>
+            <div class="profile-party-vp" id="profile-party-vp">
+              <div class="profile-party-col">
+                <div id="profile-party-logo" class="profile-party-logo"></div>
+              </div>
+              <div class="profile-vp-col">
+                <span class="profile-vp-label">Fórmula vicepresidencial</span>
+                <p id="profile-vp"></p>
+              </div>
+            </div>
+            <div class="profile-edu-bio" id="profile-edu-bio">
+              <span id="profile-edu"></span>
+              <p id="profile-bio"></p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Banner de comparación -->
+    <div id="compare-banner" role="status" aria-live="polite"></div>
+
+    <!-- Comentarios de expertos -->
+    <div id="expertos-panel" class="expertos-panel" hidden>
+      <div class="expertos-panel-inner">
+        <h2 class="expertos-panel-title">Comentarios de Expertos</h2>
+        <div class="expertos-panel-list" id="expertos-panel-list"></div>
+      </div>
+    </div>
+
+    <!-- Controles de comparación -->
+    <div class="profile-actions">
+      <label for="compare-select" class="sr-only">Seleccionar candidato para comparar</label>
+      <select id="compare-select" aria-label="Comparar con otro candidato">
+        <option value="">— Comparar con otro candidato —</option>
+      </select>
+      <button class="compare-btn" onclick="App.doCompare()">Comparar</button>
+      <button id="clear-compare-btn" onclick="App.clearCompare()">✕ Quitar comparación</button>
+    </div>
+
+    <!-- Propuestas -->
+    <main>
+      <div class="proposals-wrapper">
+        <div id="filter-bar" class="filter-bar"></div>
+        <span class="proposals-section-label">Propuestas</span>
+        <div class="proposals-container" id="proposals-container">
+        </div>
+      </div>
+
+      <!-- Ver otro candidato -->
+      <section id="otros-candidatos-section" aria-label="Ver otro candidato">
+        <div class="otros-inner">
+          <h2 class="otros-title">Ver otro candidato</h2>
+          <div id="otros-candidatos-grid" class="otros-grid"></div>
+        </div>
+      </section>
+
+      <!-- Red Flags -->
+      <section id="red-flags-section" aria-label="Red Flags">
+        <div class="rf-inner">
+          <div class="rf-header">
+            <div class="rf-icon" aria-hidden="true">🚩</div>
+            <div class="rf-header-text">
+              <h2>Red Flags</h2>
+              <p>Señales de alerta democrática detectadas en este candidato</p>
+            </div>
+          </div>
+          <div class="rf-grid" id="red-flags-grid">
+          </div>
+        </div>
+      </section>
+    </main>
+
+  </div>
+
+  <!-- ══════════════════════════════════════════════════
+       PAGE: SECTOR
+  ═══════════════════════════════════════════════════ -->
+  <div id="page-sector" class="page">
+
+    <div class="breadcrumb" role="navigation" aria-label="Navegación de ruta">
+      <button class="breadcrumb-link" onclick="App.goHome()">Inicio</button>
+      <span class="breadcrumb-sep" aria-hidden="true">›</span>
+      <span id="sector-breadcrumb-name" class="breadcrumb-current"></span>
+    </div>
+
+    <header class="sector-hero" id="sector-hero">
+      <div id="sector-hero-icon" class="sector-hero-icon" aria-hidden="true"></div>
+      <h1 id="sector-hero-title"></h1>
+    </header>
+
+    <main class="sector-main">
+      <div class="sector-layout">
+
+        <div class="sector-video-col">
+          <div class="sector-video-placeholder" id="sector-video">
+            <span>Video disponible próximamente</span>
+          </div>
+        </div>
+
+        <div class="sector-right-col">
+          <div class="sector-candidates-sidebar" id="sector-candidates-sidebar"
+               role="list" aria-label="Candidatos"></div>
+          <div class="sector-candidate-info" id="sector-candidate-info"></div>
+        </div>
+
+      </div>
+
+      <section id="otros-sectores-section" aria-label="Ver otros sectores">
+        <div class="otros-inner">
+          <h2 class="otros-title">Ver otros sectores</h2>
+          <div id="otros-sectores-grid" class="sectores-grid"></div>
+        </div>
+      </section>
+    </main>
+
+  </div>
+
+  <!-- ── MODAL ──────────────────────────────────────── -->
+  <div id="modal-overlay" role="dialog" aria-modal="true"
+       aria-label="Información adicional" aria-hidden="true">
+    <div class="modal">
+      <div class="modal-header">
+        <span id="modal-icon" aria-hidden="true"></span>
+        <h2 id="modal-title"></h2>
+        <button id="modal-close" aria-label="Cerrar">✕</button>
+      </div>
+      <div class="modal-body">
+        <div id="modal-body-content"></div>
+      </div>
+      <div class="modal-footer" id="modal-footer"></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════
+       PAGE: METODOLOGÍA
+  ═══════════════════════════════════════════════════ -->
+  <div id="page-metodologia" class="page">
+
+    <!-- Breadcrumb -->
+    <div class="breadcrumb" role="navigation" aria-label="Navegación de ruta">
+      <button class="breadcrumb-link" onclick="App.goHome()">Inicio</button>
+      <span class="breadcrumb-sep" aria-hidden="true">›</span>
+      <span class="breadcrumb-current">Metodología</span>
+    </div>
+
+    <header class="metodologia-header">
+      <h1>Metodología</h1>
+    </header>
+
+    <main class="metodologia-body">
+
+      <p>Esta plataforma reúne información sobre las propuestas de los cinco candidatos punteros en cinco sectores clave para el siguiente gobierno. El objetivo es sistematizar y centralizar las propuestas para que sean más fáciles de leer y analizar. Además, hacemos una calificación de nivel de riesgo institucional y para el Estado de Derecho fundamentado en los criterios y principios de la Fundación, disponibles <a href="https://fedecolombia.org/quienes-somos/" class="metod-link">aquí</a>. La Fundación es una organización no gubernamental, sin ánimo de lucro y sin filiación política. Con esta herramienta buscamos aportar al debate público para que la ciudadanía cuente con información verificada y comentada por expertos para tomar decisiones informadas.</p>
+
+      <h2>Fuentes de información</h2>
+      <p>La fuente principal de información son los programas oficiales de gobierno publicados por las campañas de los candidatos. En el caso de Abelardo de la Espriella se revisaron también entrevistas y publicaciones en redes sociales, pues el candidato no había publicado su programa al momento de iniciar esta revisión. En el caso de Sergio Fajardo también consultamos los programas detallados publicados en su página para los diferentes sectores. Puede consultar los programas de gobierno que usamos <a href="https://drive.google.com/drive/folders/1JZyCxiilWQQG0NbjYqdQSyYa-J0lhySa?usp=sharing" class="metod-link">aquí</a>.</p>
+
+      <h2>Edición de las propuestas</h2>
+      <p>Las propuestas son reproducidas con ediciones mínimas en algunos casos para mayor claridad o para sintetizar. Cuando las propuestas no provienen de los programas, las redactamos reproduciendo las palabras de los candidatos en sus entrevistas o publicaciones de redes sociales.</p>
+
+      <h2>Selección de sectores</h2>
+      <p>Los sectores priorizados para el análisis se basan en las líneas de litigio estratégico que prioriza la Fundación. Más que hacer un barrido por todas las propuestas de los candidatos en todos los temas, buscamos dar información detallada y de alta calidad sobre las áreas de experticia de la Fundación.</p>
+
+      <h2>Comentarios de expertos</h2>
+      <p>Varias propuestas fueron comentadas por expertos en cada uno de los temas. Estas fueron reproducidas con ediciones mínimas para claridad y síntesis.</p>
+      <p>El panel de expertos se compone de:</p>
+
+      <div class="metod-experts">
+        <div class="metod-expert-sector">
+          <h3><img src="img/icon-seguridad.svg" class="metod-sector-icon" aria-hidden="true">Seguridad</h3>
+          <ul>
+            <li><strong>Santiago Tobón</strong> — Director del Centro de Valor Público, Universidad EAFIT</li>
+            <li><strong>Javier Flórez</strong> — Director del área de conflicto y seguridad, Fundación Ideas para la Paz</li>
+          </ul>
+        </div>
+        <div class="metod-expert-sector">
+          <h3><img src="img/icon-salud.svg" class="metod-sector-icon" aria-hidden="true">Salud</h3>
+          <ul>
+            <li><strong>Augusto Galán</strong> — Director de Así Vamos en Salud</li>
+            <li><strong>Ana María Vesga</strong> — Presidente -Ejecutiva de Acemi</li>
+            <li><strong>Jesús Botero</strong> — ​​​​Profesor emérito y miembro del Semillero en Estudios en Coyuntura Económica. Especialista en Política Económica</li>
+            <li><strong>Ramón Abel Castaño</strong> — ​​​​Consultor de sistemas de salud. Doctor en Política y Salud Pública</li>
+          </ul>
+        </div>
+        <div class="metod-expert-sector">
+          <h3><img src="img/icon-energia.svg" class="metod-sector-icon" aria-hidden="true">Energía</h3>
+          <ul>
+            <li><strong>Milton Montoya</strong> — Director del Departamento de Derecho Minero-Energético de la Universidad Externado</li>
+            <li><strong>Javier Lastra</strong> — Abogado y analista del sector energético</li>
+            <li><strong>Juan Felipe Neira</strong> — Investigador de la Universidad Externado. Abogado y Doctor en política minero-energética de la Universidad de Dundee</li>
+          </ul>
+        </div>
+        <div class="metod-expert-sector">
+          <h3><img src="img/icon-tierras.svg" class="metod-sector-icon" aria-hidden="true">Tierras y agro</h3>
+          <ul>
+            <li><strong>Felipe Clavijo</strong> — Abogado constitucionalista y especialista en tierras</li>
+            <li><strong>Andrés Bodensiek</strong> — Máster en economía agroalimentaria y ambiental de la Universidad Sueca de Ciencias Agrícolas y la Universidad de Bonn. Especialista en Derecho de Tierras de la Universidad Externado</li>
+            <li><strong>Juan Carlos Muñoz</strong> — ​Ph.D. en Economía, Universidad Libre de Bruselas con mención de Doctorado Europea de la Universidad Pompeu Fabra. Director del Área de Políticas y Desarrollo</li>
+          </ul>
+        </div>
+        <!-- <div class="metod-expert-sector">
+          <h3><img src="img/icon-institucional.svg" class="metod-sector-icon" aria-hidden="true">Institucional</h3>
+          <ul>
+            <li>Abogados e investigadores de la Fundación</li>
+          </ul>
+        </div> -->
+      </div>
+
+      <h2>Definición del nivel de riesgo de las propuestas</h2>
+      <p>Algunas propuestas están marcadas con "Alerta" o "Amenaza" para la institucionalidad y el Estado de Derecho. Esta marcación se basa en la metodología del semáforo del Estado de Derecho desarrollado por la Fundación.</p>
+      <p>Una propuesta está marcada con <span class="chip-alerta">Alerta</span> cuando implica una posible inconveniencia, inconstitucionalidad o ilegalidad. Consideramos inconvenientes las propuestas que, aunque válidas en el marco institucional vigente, son perjudiciales por sus consecuencias económicas, sociales o culturales.</p>
+      <p>Una propuesta está marcada como <span class="chip-amenaza">Amenaza</span> cuando implica una amenaza real o altamente probable para el Estado de Derecho, como sustitución de la Constitución o propuestas contrarias a los principios del Estado de Derecho.</p>
+
+      <h2>Resúmenes sectoriales</h2>
+      <p>Los resúmenes por sector se basan en el contenido de los programas de gobierno de los candidatos y en los comentarios de los expertos al respecto.</p>
+  
+      <h2>Uso de inteligencia artificial</h2>
+      <p>La lista de propuestas fue extraída manualmente de los programas de los candidatos. Usamos una herramienta de inteligencia artificial para verificar que las propuestas extraídas manualmente correspondieran con lo que se encuentra en los programas. También usamos inteligencia artificial para hacer un resumen conciso de las propuestas por sector y los comentarios de los expertos.</p>
+
+      <h2>Preguntas y reporte de errores</h2>
+      <p>Si tiene alguna pregunta o si encuentra información incorrecta o desactualizada, puede reportarla a <a href="mailto:ideas@fedecolombia.org" class="metod-link">ideas@fedecolombia.org</a>.</p>
+
+    </main>
+  </div>
+
+  <!-- ── FOOTER ───────────────────────────────────────── -->
+  <footer id="site-footer">
+    <div class="footer-inner">
+
+      <!-- Col 1: Brand -->
+      <div class="footer-col footer-col-brand">
+        <a href="https://fedecolombia.org/" target="_blank" rel="noopener" class="footer-logo-link">
+          <img src="img/logo-fede-hz-blanco.svg" alt="Fundación para el Estado de Derecho" class="footer-logo">
+        </a>
+        <p class="footer-tagline">Este es un proyecto de la Fundación para el Estado de Derecho.</p>
+        <p class="footer-desc">Esta herramienta es informativa y no influye en la intención de voto de la ciudadanía. La Fundación para el Estado de Derecho es una organización no gubernamental, sin ánimo de lucro y sin filiación política.</p>
+        <div class="footer-social">
+          <a href="https://x.com/fede_colombia_" target="_blank" rel="noopener" aria-label="X (Twitter)">
+            <img src="img/x-logo.svg" alt="X">
+          </a>
+          <a href="https://www.instagram.com/fedecolombiaoficial/" target="_blank" rel="noopener" aria-label="Instagram">
+            <img src="img/Instagram-logo.svg" alt="Instagram">
+          </a>
+          <a href="https://www.tiktok.com/@fedecolombiaoficial" target="_blank" rel="noopener" aria-label="TikTok">
+            <img src="img/tiktok-logo.svg" alt="TikTok">
+          </a>
+          <a href="https://www.linkedin.com/company/fede-colombia/posts/?feedView=all" target="_blank" rel="noopener" aria-label="LinkedIn">
+            <img src="img/linkedin-logo.svg" alt="LinkedIn">
+          </a>
+        </div>
+      </div>
+
+      <!-- Col 2: Candidatos -->
+      <div class="footer-col footer-col-nav">
+        <h3 class="footer-col-title">Candidatos</h3>
+        <ul id="footer-candidates-list" class="footer-links"></ul>
+      </div>
+
+      <!-- Col 3: Sectores -->
+      <div class="footer-col footer-col-nav">
+        <h3 class="footer-col-title">Sectores</h3>
+        <ul id="footer-sectors-list" class="footer-links"></ul>
+      </div>
+
+    </div>
+    <div class="footer-bottom">
+      <p>¿Alguna pregunta? Escríbanos a <a href="mailto:ideas@fedecolombia.org">ideas@fedecolombia.org</a></p>
+    </div>
+  </footer>
+
+  <!-- ── SCRIPTS ────────────────────────────────────── -->
+  <!-- no cambiar orden -->
+  <script src="config.js"></script>
+  <script src="data.js"></script>
+  <script src="render.js"></script>
+  <script src="app.js"></script>
+
+</body>
+</html>

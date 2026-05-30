@@ -1,0 +1,96 @@
+# Dr. votIA — Guacamayo, el politólogo · pruebas del backend
+#
+# Servidor:  uv run dr-votia serve   ->   http://127.0.0.1:8000  (docs en /docs)
+# Usar con la extensión REST Client (VS Code) o JetBrains HTTP Client.
+#
+# Enums válidos:
+#   candidato: fajardo | lopez | cepeda | valencia | espriella | nacional
+#   tema:      seguridad | economia | salud | educacion | anticorrupcion | medioambiente | general
+#   tipo:      propuesta | dato_historico | estadistica_nacional
+
+@host = http://127.0.0.1:8000
+
+### Health check
+GET {{host}}/health
+
+### Chat — pregunta abierta (sin filtros)
+POST {{host}}/chat
+Content-Type: application/json
+
+{
+  "pregunta": "¿Qué propone Fajardo en seguridad?"
+}
+
+### Chat — filtrado por candidato
+POST {{host}}/chat
+Content-Type: application/json
+
+{
+  "pregunta": "¿Qué propone en educación y ciencia?",
+  "candidato": "fajardo",
+  "k": 8
+}
+
+### Chat — estadística nacional (datos del país, no propuestas)
+POST {{host}}/chat
+Content-Type: application/json
+
+{
+  "pregunta": "¿Cuál es la pobreza monetaria nacional?",
+  "tipo": "estadistica_nacional"
+}
+
+### Chat — filtrado por tema
+POST {{host}}/chat
+Content-Type: application/json
+
+{
+  "pregunta": "Compara las propuestas de salud de los candidatos",
+  "tema": "salud"
+}
+
+### Tono brutal — confrontar gestión previa vs. propuesta
+POST {{host}}/chat
+Content-Type: application/json
+
+{
+  "pregunta": "¿Claudia López cumplió sus promesas como alcaldesa de Bogotá?",
+  "candidato": "lopez"
+}
+
+### Tono brutal — ausencia de trayectoria como factor de riesgo
+POST {{host}}/chat
+Content-Type: application/json
+
+{
+  "pregunta": "¿Qué experiencia de gestión pública tiene De la Espriella?",
+  "candidato": "espriella"
+}
+
+### Veredicto comparativo — solidez estadística
+POST {{host}}/chat
+Content-Type: application/json
+
+{
+  "pregunta": "¿Quién tiene el plan de seguridad más creíble según los datos?",
+  "tema": "seguridad",
+  "k": 12
+}
+
+### Viabilidad fiscal
+POST {{host}}/chat
+Content-Type: application/json
+
+{
+  "pregunta": "¿Qué candidato tiene la propuesta económica más viable fiscalmente?",
+  "tema": "economia",
+  "k": 12
+}
+
+### Caso límite — pregunta sin datos en el corpus (debe declarar la ausencia)
+POST {{host}}/chat
+Content-Type: application/json
+
+{
+  "pregunta": "¿Cuál es la postura de los candidatos sobre la exploración espacial?"
+}
