@@ -1,0 +1,323 @@
+@import "tailwindcss";
+
+/* ------------------------------------------------------------------ *
+ * "Tierra Pixelada" — design tokens (mirrors stitch DESIGN.md).
+ * Retro 16-bit / pixel-art with a Colombian palette.
+ * ------------------------------------------------------------------ */
+@theme {
+  /* Surfaces (warm parchment / aged paper) */
+  --color-surface: #fff9ed;
+  --color-surface-dim: #e2dabf;
+  --color-surface-bright: #fff9ed;
+  --color-surface-lowest: #ffffff;
+  --color-surface-low: #fcf3d8;
+  --color-surface-container: #f7eed2;
+  --color-surface-high: #f1e8cd;
+  --color-surface-highest: #ebe2c8;
+  --color-parchment: #f4ebd0;
+
+  --color-on-surface: #1f1c0b;
+  --color-on-surface-variant: #4e4632;
+  --color-inverse-surface: #35301e;
+  --color-inverse-on-surface: #faf0d5;
+
+  /* Borders / outlines — "Roasted Coffee" instead of pure black */
+  --color-coffee: #2d1b10;
+  --color-outline: #80765f;
+  --color-outline-variant: #d1c5ab;
+
+  /* Primary — sunny gold */
+  --color-primary: #735c00;
+  --color-on-primary: #ffffff;
+  --color-primary-container: #ffcd00;
+  --color-on-primary-container: #6f5800;
+  --color-gold: #f0c100;
+  --color-gold-dim: #c79e00;
+
+  /* Secondary — colonial navy */
+  --color-secondary: #3959b0;
+  --color-on-secondary: #ffffff;
+  --color-secondary-container: #84a2fe;
+  --color-on-secondary-container: #09348b;
+
+  /* Tertiary — scarlet */
+  --color-tertiary: #bf0229;
+  --color-on-tertiary: #ffffff;
+  --color-tertiary-container: #ffc5c3;
+  --color-on-tertiary-container: #b80027;
+
+  /* Success — Colombian emerald */
+  --color-emerald: #00a86b;
+  --color-emerald-dim: #007a4d;
+
+  --color-error: #ba1a1a;
+  --color-on-error: #ffffff;
+  --color-error-container: #ffdad6;
+
+  --color-background: #fff9ed;
+  --color-on-background: #1f1c0b;
+
+  /* Typography */
+  --font-display: var(--font-space-grotesk), system-ui, sans-serif;
+  --font-body: var(--font-hanken-grotesk), system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, monospace;
+
+  /* Pixel grid (4px unit) */
+  --spacing: 4px;
+}
+
+/* ------------------------------------------------------------------ *
+ * Base
+ * ------------------------------------------------------------------ */
+:root {
+  color-scheme: light;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  color: var(--color-on-surface);
+  background-color: #cfe7d6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/*
+ * Scenic "Tierra Pixelada" backdrop, composed entirely in CSS so it stays crisp
+ * at any size (no stretched photos). Three fixed layers behind the content:
+ *   ::before — pixel sky gradient + drifting clouds + faint scanline texture
+ *   ::after  — layered Andean mountain band pinned to the bottom
+ */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  background:
+    /* faint pixel scanline texture */
+    repeating-linear-gradient(0deg, rgb(45 27 16 / 0.025) 0 2px, transparent 2px 4px),
+    /* clouds drifting across the upper sky */
+    url("/art/clouds.png") repeat-x 0 8%,
+    /* sky → land vertical gradient (quantized into pixel bands) */
+    linear-gradient(
+      180deg,
+      #bfe0cb 0%,
+      #d6e9d2 26%,
+      #efe6cd 54%,
+      #ecdfbf 100%
+    );
+  background-size:
+    auto,
+    220px auto,
+    auto;
+  image-rendering: pixelated;
+}
+
+body::after {
+  content: "";
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 240px;
+  z-index: -1;
+  pointer-events: none;
+  background: url("/art/mountains.png") repeat-x bottom / 480px auto;
+  image-rendering: pixelated;
+  opacity: 0.92;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  body::before {
+    animation: cloud-drift 90s linear infinite;
+  }
+}
+
+@keyframes cloud-drift {
+  from {
+    background-position:
+      0 0,
+      0 8%,
+      0 0;
+  }
+  to {
+    background-position:
+      0 0,
+      440px 8%,
+      0 0;
+  }
+}
+
+/* Headlines: blocky retro title-cards, ALL CAPS with a 2px drop shadow */
+.font-display {
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.pixelated {
+  image-rendering: pixelated;
+}
+
+/* ------------------------------------------------------------------ *
+ * Pixel-art primitives
+ * ------------------------------------------------------------------ */
+@layer components {
+  /* Hard-edge isometric depth: solid offset block, never a Gaussian blur. */
+  .pixel-shadow {
+    box-shadow: 4px 4px 0 0 rgb(0 0 0 / 0.25);
+  }
+  .pixel-shadow-lg {
+    box-shadow: 8px 8px 0 0 rgb(0 0 0 / 0.25);
+  }
+
+  /* Tier-2 panel: parchment tile with a thick coffee outline, square corners. */
+  .pixel-panel {
+    background-color: var(--color-surface-container);
+    border: 4px solid var(--color-coffee);
+    box-shadow: 6px 6px 0 0 rgb(0 0 0 / 0.25);
+  }
+
+  /* Tier-3 window: framed effect — coffee outline + lighter parchment inline. */
+  .pixel-window {
+    background-color: var(--color-surface-container);
+    border: 4px solid var(--color-coffee);
+    outline: 4px solid var(--color-surface-low);
+    outline-offset: -8px;
+    box-shadow: 8px 8px 0 0 rgb(0 0 0 / 0.3);
+  }
+
+  /* Tactile button: solid bottom plane; "presses" 4px down on :active. */
+  .pixel-btn {
+    font-family: var(--font-mono);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--color-coffee);
+    background-color: var(--color-gold);
+    border: 3px solid var(--color-coffee);
+    box-shadow: 0 4px 0 0 var(--color-gold-dim), 0 4px 0 3px var(--color-coffee);
+    transition: transform 60ms steps(2), box-shadow 60ms steps(2);
+    cursor: pointer;
+  }
+  .pixel-btn:hover {
+    filter: brightness(1.05);
+  }
+  .pixel-btn:active:not(:disabled) {
+    transform: translateY(4px);
+    box-shadow: 0 0 0 3px var(--color-coffee);
+  }
+  .pixel-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  /* Secondary (navy) and danger (scarlet) button variants. */
+  .pixel-btn-secondary {
+    color: var(--color-on-secondary);
+    background-color: var(--color-secondary);
+    box-shadow: 0 4px 0 0 var(--color-on-secondary-container),
+      0 4px 0 3px var(--color-coffee);
+  }
+  .pixel-btn-danger {
+    color: var(--color-on-tertiary);
+    background-color: var(--color-tertiary);
+    box-shadow: 0 4px 0 0 #7a0019, 0 4px 0 3px var(--color-coffee);
+  }
+
+  /* Sunken input — inset top-left dark border, white field. */
+  .pixel-input {
+    font-family: var(--font-body);
+    background-color: var(--color-surface-lowest);
+    border: 3px solid var(--color-coffee);
+    box-shadow: inset 3px 3px 0 0 rgb(45 27 16 / 0.18);
+    color: var(--color-on-surface);
+  }
+  .pixel-input::placeholder {
+    color: var(--color-outline);
+  }
+  .pixel-input:focus {
+    outline: 3px solid var(--color-gold);
+    outline-offset: 0;
+  }
+
+  /* Chip / badge — high-contrast mono rectangle. */
+  .pixel-chip {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    background-color: var(--color-primary-container);
+    color: var(--color-on-primary-container);
+    border: 2px solid var(--color-coffee);
+    box-shadow: 2px 2px 0 0 var(--color-coffee);
+  }
+
+  /* Label / metadata text */
+  .pixel-label {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-on-surface-variant);
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ * Segmented progress (pips, not a smooth fill) — emerald green.
+ * ------------------------------------------------------------------ */
+.pixel-progress {
+  display: flex;
+  gap: 3px;
+  width: 100%;
+}
+.pixel-progress > span {
+  flex: 1;
+  height: 12px;
+  border: 2px solid var(--color-coffee);
+  background-color: var(--color-surface-lowest);
+}
+.pixel-progress > span[data-on="true"] {
+  background-color: var(--color-emerald);
+}
+
+/* Chat bubble tail — 8x8 pixel triangle aligned to the grid. */
+.bubble-tail-left::before,
+.bubble-tail-right::before {
+  content: "";
+  position: absolute;
+  bottom: 14px;
+  width: 0;
+  height: 0;
+  border-style: solid;
+}
+.bubble-tail-left::before {
+  left: -10px;
+  border-width: 6px 10px 6px 0;
+  border-color: transparent var(--color-coffee) transparent transparent;
+}
+.bubble-tail-right::before {
+  right: -10px;
+  border-width: 6px 0 6px 10px;
+  border-color: transparent transparent transparent var(--color-coffee);
+}
+
+/* Custom scrollbar to match the wooden frame. */
+.pixel-scroll::-webkit-scrollbar {
+  width: 12px;
+}
+.pixel-scroll::-webkit-scrollbar-track {
+  background: var(--color-surface-high);
+  border-left: 2px solid var(--color-coffee);
+}
+.pixel-scroll::-webkit-scrollbar-thumb {
+  background: var(--color-gold);
+  border: 2px solid var(--color-coffee);
+}
