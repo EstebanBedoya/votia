@@ -13,12 +13,15 @@ The refiner is optional: without it, the raw question is used directly.
 
 from __future__ import annotations
 
+from dr_votia.application.guardrail import Guardrail
 from dr_votia.application.prompts import (
+    GUARD_REFUSAL,
     SYSTEM_PROMPT,
     build_context,
     build_user_message,
 )
 from dr_votia.application.refine_query import QueryRefiner
+from dr_votia.domain.conversation import Message
 from dr_votia.domain.models import Answer, Query, Tema
 from dr_votia.domain.ports import EmbeddingProvider, LLMProvider, VectorStore
 
@@ -31,14 +34,21 @@ class AnswerQuestion:
         llm: LLMProvider,
         *,
         refiner: QueryRefiner | None = None,
+        guardrail: Guardrail | None = None,
     ) -> None:
         self._embeddings = embeddings
         self._store = store
         self._llm = llm
         self._refiner = refiner
+        self._guardrail = guardrail
 
-    def __call__(self, query: Query) -> Answer:
-        search_text, classified_tema = self._refine(query)
+    def __call__(self, query: Query, *, history: list[Message] | None = None) -> Answer:
+        # Guardrail short-circuits BEFORE any embedding, retrieval, or the
+        # expensive model: a rejected question costs at most one cheap call.
+        if self._guardrail is not None and not self._guardrail.check(query.text).allowed:
+            return Answer(text=GUARD_REFUSAL, sources=[])
+
+        search_text, classified_tema = self._refine(query, history)
         # An explicit caller filter wins; otherwise fall back to the classified one.
         tema = query.tema or classified_tema
 
@@ -57,8 +67,8 @@ class AnswerQuestion:
         )
         return Answer(text=text, sources=chunks)
 
-    def _refine(self, query: Query) -> tuple[str, Tema | None]:
+    def _refine(self, query: Query, history: list[Message] | None) -> tuple[str, Tema | None]:
         if self._refiner is None:
             return query.text, None
-        refined = self._refiner(query.text)
+        refined = self._refiner(query.text, history)
         return refined.search_text, refined.tema

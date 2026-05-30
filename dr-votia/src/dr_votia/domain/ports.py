@@ -11,6 +11,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Protocol, runtime_checkable
 
+from dr_votia.domain.conversation import Message, Session
 from dr_votia.domain.models import (
     Candidato,
     EmbeddedChunk,
@@ -87,6 +88,36 @@ class LLMProvider(Protocol):
     """Generates a grounded answer from a system prompt and a user message."""
 
     def generate(self, *, system: str, user: str) -> str: ...
+
+
+@runtime_checkable
+class SessionStore(Protocol):
+    """Persists conversation sessions and their messages, and answers the
+    counting queries the rate limiter needs.
+
+    ``recent_request_count`` counts user turns in a trailing time window, keyed
+    by IP or by session — the two axes the edge enforces limits on."""
+
+    def create(self) -> Session: ...
+
+    def exists(self, session_id: str) -> bool: ...
+
+    def append(self, session_id: str, message: Message, *, ip: str | None = None) -> None: ...
+
+    def history(self, session_id: str, *, limit: int = 10) -> list[Message]:
+        """The most recent ``limit`` messages, in chronological order."""
+        ...
+
+    def recent_request_count(
+        self,
+        *,
+        within_seconds: int,
+        ip: str | None = None,
+        session_id: str | None = None,
+    ) -> int:
+        """User turns seen in the last ``within_seconds``, filtered by whichever
+        key is provided. Exactly one of ``ip`` / ``session_id`` is expected."""
+        ...
 
 
 @runtime_checkable

@@ -41,3 +41,19 @@ class Settings(BaseSettings):
     chunk_size: int = 800
     chunk_overlap: int = 150
     insert_batch: int = 50
+
+    # Scoring (radar). score_runs = how many times each axis is graded to measure
+    # judgment stability (mean ± std); score_k = proposals retrieved per axis.
+    score_runs: int = 3
+    score_k: int = 8
+
+    # Sessions & rate limiting. Set rate_limit_enabled=false to turn limiting off
+    # entirely, or send the bypass token (X-Admin-Token) to skip it per request —
+    # so the operator never limits themselves. Limits are per trailing window.
+    rate_limit_enabled: bool = True
+    rate_limit_per_ip: int = 30
+    rate_limit_per_session: int = 20
+    rate_limit_window_seconds: int = 60
+    rate_limit_bypass_token: SecretStr | None = None
+    session_history_limit: int = 10
+    session_cookie_name: str = "votia_session"

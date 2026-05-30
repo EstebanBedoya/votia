@@ -14,7 +14,8 @@ from __future__ import annotations
 import json
 import re
 
-from dr_votia.application.prompts import REFINE_SYSTEM
+from dr_votia.application.prompts import REFINE_SYSTEM, build_refine_user_message
+from dr_votia.domain.conversation import Message
 from dr_votia.domain.models import RefinedQuery, Tema
 from dr_votia.domain.ports import LLMProvider
 
@@ -25,8 +26,10 @@ class QueryRefiner:
     def __init__(self, llm: LLMProvider) -> None:
         self._llm = llm
 
-    def __call__(self, question: str) -> RefinedQuery:
-        raw = self._llm.generate(system=REFINE_SYSTEM, user=question)
+    def __call__(self, question: str, history: list[Message] | None = None) -> RefinedQuery:
+        raw = self._llm.generate(
+            system=REFINE_SYSTEM, user=build_refine_user_message(question, history)
+        )
         return _parse(raw, fallback=question)
 
 

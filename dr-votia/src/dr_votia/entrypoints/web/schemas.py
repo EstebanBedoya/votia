@@ -53,12 +53,14 @@ class SourceDTO(BaseModel):
 class ChatResponse(BaseModel):
     respuesta: str
     fuentes: list[SourceDTO]
+    session_id: str | None = None
 
     @classmethod
-    def from_answer(cls, answer: Answer) -> ChatResponse:
+    def from_answer(cls, answer: Answer, *, session_id: str | None = None) -> ChatResponse:
         return cls(
             respuesta=answer.text,
             fuentes=[SourceDTO.from_chunk(c) for c in answer.sources],
+            session_id=session_id,
         )
 
 

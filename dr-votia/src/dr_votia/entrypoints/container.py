@@ -10,17 +10,20 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from dr_votia.application.answer_question import AnswerQuestion
+from dr_votia.application.guardrail import Guardrail
 from dr_votia.application.ingest_documents import IngestDocuments
+from dr_votia.application.rate_limit import RateLimitConfig, RateLimiter
 from dr_votia.application.refine_query import QueryRefiner
 from dr_votia.application.score_candidates import ScoreCandidates
 from dr_votia.config import Settings
-from dr_votia.domain.ports import DocumentReader, ScoreRepository
+from dr_votia.domain.ports import DocumentReader, ScoreRepository, SessionStore
 from dr_votia.infrastructure.embeddings.voyage import VoyageEmbeddings
 from dr_votia.infrastructure.llm.openrouter import OpenRouterLLM
 from dr_votia.infrastructure.readers.pdf import PdfReader
 from dr_votia.infrastructure.readers.text import TextReader
 from dr_votia.infrastructure.readers.xlsx import XlsxReader
 from dr_votia.infrastructure.store.scores import SupabaseScoreStore
+from dr_votia.infrastructure.store.sessions import SupabaseSessionStore
 from dr_votia.infrastructure.store.supabase import SupabaseVectorStore
 
 
@@ -37,6 +40,8 @@ class Container:
     answer: AnswerQuestion
     score: ScoreCandidates
     score_repo: ScoreRepository
+    sessions: SessionStore
+    rate_limiter: RateLimiter
 
 
 def build_container(settings: Settings | None = None) -> Container:
@@ -67,20 +72,37 @@ def build_container(settings: Settings | None = None) -> Container:
         max_tokens=256,
     )
     refiner = QueryRefiner(query_llm)
+    # Guardrail rides the same cheap model — its scope check is also light work.
+    guardrail = Guardrail(query_llm)
     readers = build_readers()
     score_repo = SupabaseScoreStore(
         settings.supabase_url,
         settings.supabase_service_key.get_secret_value(),
+    )
+    sessions = SupabaseSessionStore(
+        settings.supabase_url,
+        settings.supabase_service_key.get_secret_value(),
+    )
+    rate_limiter = RateLimiter(
+        sessions,
+        RateLimitConfig(
+            enabled=settings.rate_limit_enabled,
+            per_ip=settings.rate_limit_per_ip,
+            per_session=settings.rate_limit_per_session,
+            window_seconds=settings.rate_limit_window_seconds,
+        ),
     )
 
     return Container(
         settings=settings,
         readers=readers,
         ingest=IngestDocuments(readers, embeddings, store, chunk_overlap=settings.chunk_overlap),
-        answer=AnswerQuestion(embeddings, store, answer_llm, refiner=refiner),
+        answer=AnswerQuestion(embeddings, store, answer_llm, refiner=refiner, guardrail=guardrail),
         # Scoring reuses the quality model — it is an evaluative judgment, not cheap preprocessing.
         score=ScoreCandidates(
             embeddings, store, answer_llm, runs=settings.score_runs, k=settings.score_k
         ),
         score_repo=score_repo,
+        sessions=sessions,
+        rate_limiter=rate_limiter,
     )

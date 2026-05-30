@@ -6,6 +6,7 @@ without touching orchestration logic.
 
 from __future__ import annotations
 
+from dr_votia.domain.conversation import Message, Role
 from dr_votia.domain.models import RetrievedChunk
 
 # Used by the cheap preprocessing model (DeepSeek V4 Flash) to rewrite the user
@@ -18,6 +19,10 @@ Dada la pregunta de un usuario, devuelve ÚNICAMENTE un objeto JSON con:
     PIB; no inventes hechos).
   - "tema": uno de ["seguridad","economia","salud","educacion","anticorrupcion",
     "medioambiente"] o null si no es claro.
+Si se incluye un HISTORIAL DE LA CONVERSACIÓN, resuelve las referencias de la
+PREGUNTA ACTUAL (pronombres, elipsis, "y en…", "¿y él?") y reescríbela como una
+consulta AUTÓNOMA que se entienda por sí sola, sin el historial. Si la pregunta
+ya es autónoma, ignorá el historial.
 Responde solo el JSON, sin texto adicional ni explicaciones.
 """
 
@@ -75,6 +80,30 @@ Responde solo el JSON, sin texto adicional.
 """
 
 
+# Used by the cheap model to decide whether a question belongs to votIA's scope
+# (the Colombian electoral context) before any retrieval runs. Topical scope only
+# — blatant instruction-override attempts are caught deterministically upstream.
+GUARD_SYSTEM = """\
+Eres un clasificador de alcance para votIA, un asistente que SOLO responde sobre
+el contexto electoral colombiano: candidatos, propuestas, planes de gobierno,
+gestiones previas y estadísticas nacionales de Colombia.
+Dada la pregunta de un usuario, devuelve ÚNICAMENTE un objeto JSON con:
+  - "on_topic": true si la pregunta busca información sobre política/elecciones
+    de Colombia; false si es sobre cualquier otra cosa (recetas, código,
+    matemática, charla general, otros países sin relación electoral colombiana).
+  - "reason": una frase breve en español explicando la decisión.
+Responde solo el JSON, sin texto adicional.
+"""
+
+# Returned to the user verbatim when the guardrail rejects a question. No data is
+# retrieved and the expensive model is never called.
+GUARD_REFUSAL = (
+    "Soy votIA y solo puedo ayudarte con el contexto electoral colombiano: "
+    "candidatos, propuestas, planes de gobierno, gestiones previas y estadísticas "
+    "nacionales. Preguntame algo sobre eso y con gusto te respondo con datos y fuentes."
+)
+
+
 def build_score_user_message(
     *,
     candidato: str,
@@ -119,3 +148,14 @@ def build_context(chunks: list[RetrievedChunk]) -> str:
 
 def build_user_message(question: str, context: str) -> str:
     return f"CONTEXTO:\n{context}\n\nPREGUNTA:\n{question}"
+
+
+def build_refine_user_message(question: str, history: list[Message] | None = None) -> str:
+    """Feed the refiner the prior turns so it can resolve a follow-up into a
+    standalone search query. With no history, the question goes through as-is."""
+    if not history:
+        return question
+    convo = "\n".join(
+        f"{'Usuario' if m.role is Role.USER else 'Asistente'}: {m.content}" for m in history
+    )
+    return f"HISTORIAL DE LA CONVERSACIÓN:\n{convo}\n\nPREGUNTA ACTUAL:\n{question}"

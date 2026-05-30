@@ -4,6 +4,7 @@ the classified topic becomes the filter when the caller gave none."""
 from __future__ import annotations
 
 from dr_votia.application.answer_question import AnswerQuestion
+from dr_votia.domain.conversation import Message, Role
 from dr_votia.domain.models import Candidato, Query, RefinedQuery, Tema
 
 
@@ -39,8 +40,10 @@ class StubLLM:
 class StubRefiner:
     def __init__(self, refined: RefinedQuery) -> None:
         self._refined = refined
+        self.seen_history: list[Message] | None = None
 
-    def __call__(self, question: str) -> RefinedQuery:
+    def __call__(self, question: str, history: list[Message] | None = None) -> RefinedQuery:
+        self.seen_history = history
         return self._refined
 
 
@@ -73,3 +76,13 @@ def test_explicit_caller_tema_overrides_classification() -> None:
 
     assert store.last_call["tema"] == Tema.ECONOMIA
     assert store.last_call["candidato"] == Candidato.LOPEZ
+
+
+def test_conversation_history_reaches_the_refiner() -> None:
+    refiner = StubRefiner(RefinedQuery(search_text="x", tema=None))
+    use_case = AnswerQuestion(RecordingEmbeddings(), RecordingStore(), StubLLM(), refiner=refiner)  # type: ignore[arg-type]
+    history = [Message(role=Role.USER, content="¿Qué propone Fajardo?")]
+
+    use_case(Query(text="¿y en salud?"), history=history)
+
+    assert refiner.seen_history == history
