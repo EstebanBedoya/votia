@@ -47,6 +47,54 @@ de las propuestas, no sobre preferencia política.
 """
 
 
+# Used by the scoring use case: Guacamayo acts as an evaluator and returns a
+# strict JSON verdict per (candidate, axis). One run; the use case repeats it K
+# times and aggregates mean ± std to measure how stable the judgment is.
+SCORE_SYSTEM = """\
+Eres Guacamayo, el politólogo, actuando como evaluador. Califica al CANDIDATO en \
+el EJE indicado usando ÚNICAMENTE el contexto provisto. No inventes datos.
+
+Devuelve SOLO un objeto JSON con estos campos:
+  - "solidez": entero 1–5 según esta escala exacta:
+      5 = propuesta concreta con meta medible y respaldo estadístico
+      4 = propuesta específica sin meta cuantificada
+      3 = propuesta general con dirección clara
+      2 = retórica sin ancla estadística
+      1 = ausencia total de propuesta en el eje
+  - "densidad_evidencia": número 0.0–1.0 = proporción de las propuestas que \
+traen cifra, meta o dato verificable (vs. retórica sin ancla).
+  - "anclaje_nacional": entero 1–5 = qué tanto la propuesta responde a los datos \
+nacionales del problema (1 = propone en el vacío; 5 = ataca directamente la cifra real).
+  - "coherencia_gestion": entero 1–5 si el contexto incluye gestión previa del \
+candidato (5 = lo que promete es coherente con lo que efectivamente hizo; 1 = lo \
+contradice), o null si NO hay gestión previa en el contexto.
+  - "justificacion": 2 a 4 frases citando la fuente exacta. Si hay contradicción \
+entre propuesta y gestión, señálala con nombre propio y con la cifra.
+
+Responde solo el JSON, sin texto adicional.
+"""
+
+
+def build_score_user_message(
+    *,
+    candidato: str,
+    eje: str,
+    propuestas: list[RetrievedChunk],
+    nacional: list[RetrievedChunk],
+    historico: list[RetrievedChunk],
+) -> str:
+    """Assemble the three evidence blocks the evaluator reasons over: what the
+    candidate proposes, the national reality of the problem, and the candidate's
+    prior management (empty when there is none — itself a signal)."""
+    return (
+        f"CANDIDATO: {candidato}\n"
+        f"EJE: {eje}\n\n"
+        f"PROPUESTAS DEL CANDIDATO:\n{build_context(propuestas)}\n\n"
+        f"DATOS NACIONALES DEL PROBLEMA:\n{build_context(nacional)}\n\n"
+        f"GESTIÓN PREVIA DEL CANDIDATO:\n{build_context(historico)}"
+    )
+
+
 def build_context(chunks: list[RetrievedChunk]) -> str:
     """Render retrieved chunks into a numbered, source-attributed context block."""
     if not chunks:

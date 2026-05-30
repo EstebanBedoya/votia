@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from typing import Any, cast
 
+from postgrest.types import CountMethod
 from supabase import Client, create_client
 
 from dr_votia.domain.models import (
@@ -67,6 +68,25 @@ class SupabaseVectorStore:
         ).execute()
         rows = cast("list[dict[str, Any]]", response.data or [])
         return [self._from_row(row) for row in rows]
+
+    def count(
+        self,
+        *,
+        candidato: Candidato | None = None,
+        tema: Tema | None = None,
+        tipo: Tipo | None = None,
+    ) -> int:
+        # count="exact" returns the total in the response regardless of the row
+        # payload; limit(1) keeps that payload tiny.
+        query = self._client.table(TABLE).select("id", count=CountMethod.exact).limit(1)
+        if candidato is not None:
+            query = query.eq("candidato", candidato.value)
+        if tema is not None:
+            query = query.eq("tema", tema.value)
+        if tipo is not None:
+            query = query.eq("tipo", tipo.value)
+        response = query.execute()
+        return response.count or 0
 
     @staticmethod
     def _to_row(ec: EmbeddedChunk) -> dict[str, Any]:

@@ -201,7 +201,12 @@ CONTEXTO DISPONIBLE (RAG):
 ### Día 3 — API + Frontend ⚠️ PARCIAL (backend sí, frontend no)
 - [x] Endpoint `POST /chat` (FastAPI) → RAG retrieval → dual-model → respuesta con fuentes
 - [x] Endpoint `GET /health`
-- [ ] **Endpoint `GET /radar/:candidato`** → scores por eje en JSON *(no existe; falta también la lógica de scoring 1–5)*
+- [x] **Endpoint `GET /radar/:candidato`** y `GET /radar` → scorecards por eje en JSON
+- [x] **Lógica de scoring por LLM** (`application/score_candidates.py`): solidez 1–5
+  (media ± desviación sobre K corridas), densidad de evidencia, anclaje nacional,
+  coherencia propuesta–gestión, + métricas deterministas (volumen, cobertura, HHI,
+  presencia histórica) y confianza. Pre-cálculo vía `uv run dr-votia score` →
+  tabla `candidate_scores`. 11 tests nuevos (38 totales)
 - [ ] **Next.js: interfaz de chat** con el Dr. votIA
 - [ ] **Next.js: radar chart** con recharts (6 ejes, hasta 3 candidatos)
 - [ ] **Next.js: tabla comparativa** generada desde JSON del agente

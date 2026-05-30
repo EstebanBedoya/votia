@@ -5,7 +5,15 @@ from __future__ import annotations
 
 from pydantic import BaseModel, Field
 
-from dr_votia.domain.models import Answer, Candidato, RetrievedChunk, Tema, Tipo
+from dr_votia.domain.models import (
+    Answer,
+    Candidato,
+    EjeMetrics,
+    RetrievedChunk,
+    Scorecard,
+    Tema,
+    Tipo,
+)
 
 
 class ChatRequest(BaseModel):
@@ -51,4 +59,54 @@ class ChatResponse(BaseModel):
         return cls(
             respuesta=answer.text,
             fuentes=[SourceDTO.from_chunk(c) for c in answer.sources],
+        )
+
+
+class EjeScoreDTO(BaseModel):
+    eje: Tema
+    volumen_propuestas: int
+    solidez: float
+    solidez_std: float
+    solidez_runs: list[int]
+    confianza: float
+    densidad_evidencia: float
+    anclaje_nacional: int
+    coherencia_gestion: int | None
+    justificacion: str
+    fuentes: list[str]
+
+    @classmethod
+    def from_domain(cls, e: EjeMetrics) -> EjeScoreDTO:
+        return cls(
+            eje=e.eje,
+            volumen_propuestas=e.volumen_propuestas,
+            solidez=e.solidez,
+            solidez_std=e.solidez_std,
+            solidez_runs=e.solidez_runs,
+            confianza=e.confianza,
+            densidad_evidencia=e.densidad_evidencia,
+            anclaje_nacional=e.anclaje_nacional,
+            coherencia_gestion=e.coherencia_gestion,
+            justificacion=e.justificacion,
+            fuentes=e.fuentes,
+        )
+
+
+class RadarResponse(BaseModel):
+    candidato: Candidato
+    cobertura: int
+    concentracion_hhi: float
+    presencia_historica: int
+    computed_at: str
+    ejes: list[EjeScoreDTO]
+
+    @classmethod
+    def from_domain(cls, card: Scorecard) -> RadarResponse:
+        return cls(
+            candidato=card.candidato,
+            cobertura=card.cobertura,
+            concentracion_hhi=card.concentracion_hhi,
+            presencia_historica=card.presencia_historica,
+            computed_at=card.computed_at,
+            ejes=[EjeScoreDTO.from_domain(e) for e in card.ejes],
         )

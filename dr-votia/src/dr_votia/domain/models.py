@@ -113,3 +113,71 @@ class Answer:
 
     text: str
     sources: list[RetrievedChunk] = field(default_factory=list)
+
+
+# --- Scoring (radar) -------------------------------------------------------
+
+RADAR_EJES: tuple[Tema, ...] = (
+    Tema.SEGURIDAD,
+    Tema.ECONOMIA,
+    Tema.SALUD,
+    Tema.EDUCACION,
+    Tema.ANTICORRUPCION,
+    Tema.MEDIOAMBIENTE,
+)
+"""The six thematic axes the radar scores. GENERAL is excluded on purpose — it
+is a catch-all, not an evaluable policy area."""
+
+EVALUABLE_CANDIDATOS: tuple[Candidato, ...] = (
+    Candidato.FAJARDO,
+    Candidato.LOPEZ,
+    Candidato.CEPEDA,
+    Candidato.VALENCIA,
+    Candidato.ESPRIELLA,
+)
+"""Candidates that get a scorecard. NACIONAL is the baseline-data pseudo-author,
+not a candidate, so it is never scored."""
+
+
+@dataclass(frozen=True, slots=True)
+class EjeMetrics:
+    """Every metric for one candidate on one radar axis, across three tiers of
+    trust (see Docs/plan.md §5–6):
+
+    - deterministic — ``volumen_propuestas`` is a raw corpus count, not a judgment.
+    - semantic (LLM) — ``solidez`` 1–5, ``densidad_evidencia`` 0–1,
+      ``anclaje_nacional`` 1–5, ``coherencia_gestion`` 1–5 (or None when the
+      candidate has no prior management to confront the proposal against).
+    - reliability — ``solidez`` is the mean of ``solidez_runs`` (K LLM runs);
+      ``solidez_std`` and ``confianza`` say how much to trust that mean.
+    """
+
+    eje: Tema
+    volumen_propuestas: int
+    solidez: float
+    solidez_std: float
+    solidez_runs: list[int]
+    confianza: float
+    densidad_evidencia: float
+    anclaje_nacional: int
+    coherencia_gestion: int | None
+    justificacion: str
+    fuentes: list[str]
+
+
+@dataclass(frozen=True, slots=True)
+class Scorecard:
+    """A candidate's full scorecard: per-axis metrics plus corpus-level stats.
+
+    ``cobertura`` (0–6) = axes with at least one proposal. ``concentracion_hhi``
+    is the Herfindahl index over proposal volume per axis (1/6 ≈ balanced agenda,
+    1.0 = monothematic). ``presencia_historica`` = count of ``dato_historico``
+    chunks (0 is itself a finding: no verifiable track record).
+    """
+
+    candidato: Candidato
+    ejes: list[EjeMetrics]
+    cobertura: int
+    concentracion_hhi: float
+    presencia_historica: int
+    computed_at: str

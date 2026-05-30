@@ -12,13 +12,15 @@ from dataclasses import dataclass
 from dr_votia.application.answer_question import AnswerQuestion
 from dr_votia.application.ingest_documents import IngestDocuments
 from dr_votia.application.refine_query import QueryRefiner
+from dr_votia.application.score_candidates import ScoreCandidates
 from dr_votia.config import Settings
-from dr_votia.domain.ports import DocumentReader
+from dr_votia.domain.ports import DocumentReader, ScoreRepository
 from dr_votia.infrastructure.embeddings.voyage import VoyageEmbeddings
 from dr_votia.infrastructure.llm.openrouter import OpenRouterLLM
 from dr_votia.infrastructure.readers.pdf import PdfReader
 from dr_votia.infrastructure.readers.text import TextReader
 from dr_votia.infrastructure.readers.xlsx import XlsxReader
+from dr_votia.infrastructure.store.scores import SupabaseScoreStore
 from dr_votia.infrastructure.store.supabase import SupabaseVectorStore
 
 
@@ -33,6 +35,8 @@ class Container:
     readers: list[DocumentReader]
     ingest: IngestDocuments
     answer: AnswerQuestion
+    score: ScoreCandidates
+    score_repo: ScoreRepository
 
 
 def build_container(settings: Settings | None = None) -> Container:
@@ -64,10 +68,19 @@ def build_container(settings: Settings | None = None) -> Container:
     )
     refiner = QueryRefiner(query_llm)
     readers = build_readers()
+    score_repo = SupabaseScoreStore(
+        settings.supabase_url,
+        settings.supabase_service_key.get_secret_value(),
+    )
 
     return Container(
         settings=settings,
         readers=readers,
         ingest=IngestDocuments(readers, embeddings, store, chunk_overlap=settings.chunk_overlap),
         answer=AnswerQuestion(embeddings, store, answer_llm, refiner=refiner),
+        # Scoring reuses the quality model — it is an evaluative judgment, not cheap preprocessing.
+        score=ScoreCandidates(
+            embeddings, store, answer_llm, runs=settings.score_runs, k=settings.score_k
+        ),
+        score_repo=score_repo,
     )

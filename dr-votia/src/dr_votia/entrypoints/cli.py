@@ -17,7 +17,14 @@ from typing import Annotated
 import typer
 
 from dr_votia.application.ingest_documents import plan_ingestion
-from dr_votia.domain.models import Candidato, Query, Tema, Tipo
+from dr_votia.domain.models import (
+    EVALUABLE_CANDIDATOS,
+    Candidato,
+    Query,
+    Scorecard,
+    Tema,
+    Tipo,
+)
 from dr_votia.entrypoints.container import build_container, build_readers
 from dr_votia.entrypoints.sources import build_sources
 
@@ -106,6 +113,44 @@ def ask(
             f"  [{s.candidato or '·'} · {s.tema or '·'} · {s.tipo}] "
             f"sim={s.similarity:.3f}  {s.fuente}"
         )
+
+
+def _print_scorecard(card: Scorecard) -> None:
+    typer.secho(
+        f"\n  {card.candidato.value}  "
+        f"(cobertura {card.cobertura}/6 · HHI {card.concentracion_hhi} · "
+        f"gestión histórica {card.presencia_historica})",
+        fg=typer.colors.CYAN,
+    )
+    for e in card.ejes:
+        coh = "—" if e.coherencia_gestion is None else str(e.coherencia_gestion)
+        typer.echo(
+            f"    {e.eje.value:<15} solidez {e.solidez}±{e.solidez_std} "
+            f"(conf {e.confianza}) · evid {e.densidad_evidencia} · "
+            f"ancla {e.anclaje_nacional} · coher {coh} · n={e.volumen_propuestas}"
+        )
+
+
+@app.command()
+def score(
+    candidato: Annotated[
+        Candidato | None, typer.Option(help="Evaluar solo este candidato (default: todos).")
+    ] = None,
+) -> None:
+    """Calcula y persiste los scorecards del radar (caro: K corridas × 6 ejes × candidato)."""
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
+    if candidato is Candidato.NACIONAL:
+        typer.secho("'nacional' no es un candidato evaluable.", fg=typer.colors.RED)
+        raise typer.Exit(1)
+
+    container = build_container()
+    targets = [candidato] if candidato is not None else list(EVALUABLE_CANDIDATOS)
+    for cand in targets:
+        typer.echo(f"Evaluando {cand.value}…")
+        card = container.score(cand)
+        container.score_repo.save(card)
+        _print_scorecard(card)
+    typer.secho(f"\n✅ Scorecards calculados y guardados: {len(targets)}.", fg=typer.colors.GREEN)
 
 
 @app.command()

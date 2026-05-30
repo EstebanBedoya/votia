@@ -21,6 +21,14 @@ Content-Type: application/json
   "pregunta": "¿Qué propone Fajardo en seguridad?"
 }
 
+### Chat — pregunta abierta (sin filtros)
+POST {{host}}/chat
+Content-Type: application/json
+
+{
+  "pregunta": "Puede a colombia pasarle lo que le paso a venezuela con chavez y maduro con alguno de los candidatos actuales?, dame una justificacion para tu respuesta como dummy"
+}
+
 ### Chat — filtrado por candidato
 POST {{host}}/chat
 Content-Type: application/json
@@ -94,3 +102,32 @@ Content-Type: application/json
 {
   "pregunta": "¿Cuál es la postura de los candidatos sobre la exploración espacial?"
 }
+
+# ─────────────────────────────────────────────────────────────────────────────
+# RADAR — scorecards pre-calculados (corré antes: uv run dr-votia score)
+# Lectura pura: no gasta API. Devuelve métricas por eje + justificación citada.
+# ─────────────────────────────────────────────────────────────────────────────
+
+### Radar — todos los candidatos
+GET {{host}}/radar
+
+### Radar — Valencia (la más sólida: economía 5.0, evidencia 0.73)
+GET {{host}}/radar/valencia
+
+### Radar — Espriella (sin gestión: coherencia null; medioambiente en 1.0 por ausencia)
+GET {{host}}/radar/espriella
+
+### Radar — Cepeda (volumen alto, baja calidad: educación n=266 pero solidez 2.0)
+GET {{host}}/radar/cepeda
+
+### Radar — Fajardo
+GET {{host}}/radar/fajardo
+
+### Radar — López
+GET {{host}}/radar/lopez
+
+### Caso límite — 'nacional' no es candidato evaluable (debe responder 422)
+GET {{host}}/radar/nacional
+
+### Caso límite — candidato calculado pero inexistente en el enum (422)
+GET {{host}}/radar/pedro

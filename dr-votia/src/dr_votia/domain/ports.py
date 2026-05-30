@@ -16,6 +16,7 @@ from dr_votia.domain.models import (
     EmbeddedChunk,
     Fragment,
     RetrievedChunk,
+    Scorecard,
     Tema,
     Tipo,
 )
@@ -54,6 +55,31 @@ class VectorStore(Protocol):
         tema: Tema | None = None,
         tipo: Tipo | None = None,
     ) -> list[RetrievedChunk]: ...
+
+    def count(
+        self,
+        *,
+        candidato: Candidato | None = None,
+        tema: Tema | None = None,
+        tipo: Tipo | None = None,
+    ) -> int:
+        """Count stored chunks matching the filters — the deterministic tier of
+        the scoring (e.g. how many proposals a candidate has per axis)."""
+        ...
+
+
+@runtime_checkable
+class ScoreRepository(Protocol):
+    """Persists computed scorecards and reads them back for the radar endpoint.
+
+    Scoring is expensive (K LLM runs × 6 axes × candidate), so it is computed
+    offline by the CLI and stored here; the web layer only reads."""
+
+    def save(self, scorecard: Scorecard) -> None: ...
+
+    def get(self, candidato: Candidato) -> Scorecard | None: ...
+
+    def all(self) -> list[Scorecard]: ...
 
 
 @runtime_checkable
