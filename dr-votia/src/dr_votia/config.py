@@ -29,13 +29,21 @@ class Settings(BaseSettings):
     voyage_tokens_per_min: int = 10_000
     voyage_requests_per_min: int = 3
 
-    # OpenRouter (OpenAI-compatible gateway). Dual-model setup:
-    #   answer model — final Dr. votIA response (quality-first)
+    # OpenRouter (OpenAI-compatible gateway). Three-model setup so each task runs
+    # on the cheapest model that still does it well:
+    #   answer model — chat response (good value: e.g. google/gemini-2.5-flash)
+    #   score model  — radar scorecards; emits structured JSON, so keep it on a
+    #                  quality model (Sonnet/Haiku) independent of the chat model
     #   query model  — cheap RAG preprocessing (reformulation + topic classification)
     openrouter_api_key: SecretStr
     openrouter_answer_model: str = "anthropic/claude-sonnet-4.6"
+    openrouter_score_model: str = "anthropic/claude-sonnet-4.6"
     openrouter_query_model: str = "deepseek/deepseek-v4-flash"
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
+    # Output budgets. Chat answers run long (comparisons + justification), so give
+    # them room; scoring emits a compact JSON rubric per axis.
+    openrouter_answer_max_tokens: int = 1536
+    openrouter_score_max_tokens: int = 2048
 
     # Pipeline knobs
     chunk_size: int = 800

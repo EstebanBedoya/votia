@@ -63,6 +63,15 @@ def build_container(settings: Settings | None = None) -> Container:
         api_key,
         model=settings.openrouter_answer_model,
         base_url=settings.openrouter_base_url,
+        max_tokens=settings.openrouter_answer_max_tokens,
+    )
+    # Scoring runs on its own (quality) model — the rubric emits structured JSON,
+    # so it stays independent of whatever cheaper model the chat uses.
+    score_llm = OpenRouterLLM(
+        api_key,
+        model=settings.openrouter_score_model,
+        base_url=settings.openrouter_base_url,
+        max_tokens=settings.openrouter_score_max_tokens,
     )
     # Cheap model for RAG preprocessing; small output budget (it only emits JSON).
     query_llm = OpenRouterLLM(
@@ -98,9 +107,10 @@ def build_container(settings: Settings | None = None) -> Container:
         readers=readers,
         ingest=IngestDocuments(readers, embeddings, store, chunk_overlap=settings.chunk_overlap),
         answer=AnswerQuestion(embeddings, store, answer_llm, refiner=refiner, guardrail=guardrail),
-        # Scoring reuses the quality model — it is an evaluative judgment, not cheap preprocessing.
+        # Scoring is an evaluative judgment on its own quality model, independent
+        # of the (cheaper) chat answer model.
         score=ScoreCandidates(
-            embeddings, store, answer_llm, runs=settings.score_runs, k=settings.score_k
+            embeddings, store, score_llm, runs=settings.score_runs, k=settings.score_k
         ),
         score_repo=score_repo,
         sessions=sessions,
