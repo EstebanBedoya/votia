@@ -5,12 +5,25 @@
 !**/.env.example
 
 # ── Local agent / tooling config (not for public repo) ───────────────────────
-/.claude/
-/.agents/
-/.atl/
+# Unanchored so they match at any depth (root *and* dr-votia/, dr-votia-web/, …).
+.claude/
+.agents/
+.atl/
+skills-lock.json
 /.mcp.json
-/skills-lock.json
 /images/
+
+# ── Design exports (large, regenerable) ──────────────────────────────────────
+stitch_custom_web_design_project/
+stitch_custom_web_design_project.zip
+
+# ── Node / Next.js ───────────────────────────────────────────────────────────
+node_modules/
+.next/
+out/
+build/
+*.tsbuildinfo
+next-env.d.ts
 
 # ── Python ───────────────────────────────────────────────────────────────────
 .venv/
