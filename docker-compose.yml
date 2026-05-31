@@ -1,7 +1,13 @@
+networks:
+  dokploy-network:
+    external: true
+
 services:
   backend:
     build:
       context: ./dr-votia
+    networks:
+      - dokploy-network
     environment:
       SUPABASE_URL: ${SUPABASE_URL}
       SUPABASE_SERVICE_KEY: ${SUPABASE_SERVICE_KEY}
@@ -41,6 +47,8 @@ services:
       API_BASE_URL: http://backend:8000
       # Also at runtime so server components (layout/page) build the same URLs.
       NEXT_PUBLIC_SUPABASE_URL: ${SUPABASE_URL}
+    networks:
+      - dokploy-network
     ports:
       - "3002:3002"
     depends_on:
