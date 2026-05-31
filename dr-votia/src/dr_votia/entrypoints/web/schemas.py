@@ -17,7 +17,7 @@ from dr_votia.domain.models import (
 
 
 class UsageResponse(BaseModel):
-    """OpenRouter credit usage — powers the 'ENERGÍA' gauge."""
+    """OpenRouter account credit usage (lifetime). Kept for backward compat."""
 
     total: float = Field(description="Total purchased credits.")
     used: float = Field(description="Credits consumed so far.")
@@ -25,6 +25,36 @@ class UsageResponse(BaseModel):
     pct: float | None = Field(
         default=None, description="Remaining as a percentage (None if no credit cap)."
     )
+
+
+class KeyResponse(BaseModel):
+    """OpenRouter API-key spending limit — powers the 'ENERGÍA' gauge."""
+
+    label: str = Field(description="Human-readable key label.")
+    usage: float = Field(description="USD spent on this key.")
+    limit: float | None = Field(default=None, description="USD spending cap (None if uncapped).")
+    limit_remaining: float | None = Field(
+        default=None, description="USD left before the cap (None if uncapped)."
+    )
+    is_free_tier: bool = Field(default=False)
+    pct: float | None = Field(
+        default=None, description="Remaining as a percentage of the limit (None if no cap)."
+    )
+
+
+class SessionUsageResponse(BaseModel):
+    """How many OpenRouter dollars the current session has spent."""
+
+    session_id: str
+    cost_usd: float = Field(description="Accumulated USD spend for this session.")
+
+
+class ConfigResponse(BaseModel):
+    """Which models the system runs on — shown in the character panel."""
+
+    answer_model: str = Field(description="Chat answer model slug.")
+    score_model: str = Field(description="Radar scoring model slug.")
+    query_model: str = Field(description="Cheap RAG preprocessing model slug.")
 
 
 class ChatRequest(BaseModel):
@@ -65,13 +95,28 @@ class ChatResponse(BaseModel):
     respuesta: str
     fuentes: list[SourceDTO]
     session_id: str | None = None
+    cost_usd: float = Field(default=0.0, description="USD spent on this turn.")
+    model: str | None = Field(default=None, description="Answer model that served this turn.")
+    session_cost_usd: float | None = Field(
+        default=None, description="Running USD total for the session after this turn."
+    )
 
     @classmethod
-    def from_answer(cls, answer: Answer, *, session_id: str | None = None) -> ChatResponse:
+    def from_answer(
+        cls,
+        answer: Answer,
+        *,
+        session_id: str | None = None,
+        model: str | None = None,
+        session_cost_usd: float | None = None,
+    ) -> ChatResponse:
         return cls(
             respuesta=answer.text,
             fuentes=[SourceDTO.from_chunk(c) for c in answer.sources],
             session_id=session_id,
+            cost_usd=answer.cost_usd,
+            model=model,
+            session_cost_usd=session_cost_usd,
         )
 
 

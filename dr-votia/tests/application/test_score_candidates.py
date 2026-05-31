@@ -14,6 +14,7 @@ from dr_votia.domain.models import (
     RADAR_EJES,
     Candidato,
     EjeMetrics,
+    LLMResult,
     RetrievedChunk,
     Scorecard,
     Tema,
@@ -67,10 +68,10 @@ class FakeLLM:
         self._replies = replies
         self.calls = 0
 
-    def generate(self, *, system: str, user: str) -> str:
+    def generate(self, *, system: str, user: str) -> LLMResult:
         reply = self._replies[self.calls % len(self._replies)]
         self.calls += 1
-        return reply
+        return LLMResult(text=reply)
 
 
 def _reply(**fields: object) -> str:

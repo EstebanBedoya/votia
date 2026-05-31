@@ -36,6 +36,41 @@ class Tipo(StrEnum):
 
 
 @dataclass(frozen=True, slots=True)
+class TokenUsage:
+    """Cost and token accounting for a single LLM call.
+
+    ``cost_usd`` is the dollar amount OpenRouter charged for the request (it ships
+    it on every response). It is ``None`` when the provider does not report a cost
+    (e.g. BYOK); callers treat that as ``0.0`` when summing. ``model`` is the model
+    that actually served the request, which may differ from the one requested.
+    """
+
+    cost_usd: float | None = None
+    prompt_tokens: int = 0
+    completion_tokens: int = 0
+    total_tokens: int = 0
+    cached_tokens: int = 0
+    model: str = ""
+
+    @classmethod
+    def empty(cls) -> TokenUsage:
+        """A zeroed usage — for calls that never hit the network (cache, fakes)."""
+        return cls()
+
+
+@dataclass(frozen=True, slots=True)
+class LLMResult:
+    """What the LLMProvider port returns: the generated text plus its usage.
+
+    Callers that only need the text read ``.text``; the cost/usage plumbing
+    (per-session spend) reads ``.usage``.
+    """
+
+    text: str
+    usage: TokenUsage = field(default_factory=TokenUsage.empty)
+
+
+@dataclass(frozen=True, slots=True)
 class Fragment:
     """A unit of text extracted from a source, before chunking.
 
@@ -89,6 +124,7 @@ class RefinedQuery:
 
     search_text: str
     tema: Tema | None = None
+    usage: TokenUsage = field(default_factory=TokenUsage.empty)
 
 
 @dataclass(frozen=True, slots=True)
@@ -109,10 +145,15 @@ class RetrievedChunk:
 
 @dataclass(frozen=True, slots=True)
 class Answer:
-    """The result of the RAG use case: generated text plus its sources."""
+    """The result of the RAG use case: generated text plus its sources.
+
+    ``cost_usd`` is the total OpenRouter spend for this turn — the sum of the
+    guardrail, refiner and answer model calls — used to track per-session spend.
+    """
 
     text: str
     sources: list[RetrievedChunk] = field(default_factory=list)
+    cost_usd: float = 0.0
 
 
 # --- Scoring (radar) -------------------------------------------------------
@@ -181,3 +222,4 @@ class Scorecard:
     concentracion_hhi: float
     presencia_historica: int
     computed_at: str
+    cost_usd: float = 0.0

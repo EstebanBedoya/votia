@@ -9,7 +9,7 @@ from __future__ import annotations
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from dr_votia.entrypoints.web.routes import router
+from dr_votia.entrypoints.web.routes import public_router, router
 
 
 def create_app() -> FastAPI:
@@ -21,6 +21,9 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+    # /health is always open (liveness probes, uptime monitors).
+    app.include_router(public_router)
+    # All other routes require a valid X-Access-Code header.
     app.include_router(router)
     return app
 

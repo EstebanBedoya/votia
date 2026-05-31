@@ -10,11 +10,16 @@
 
 import "server-only";
 
+import { cookies } from "next/headers";
+
 import type {
   ChatRequest,
   ChatResponse,
+  ConfigResponse,
   HealthResponse,
+  KeyResponse,
   RadarResponse,
+  SessionUsageResponse,
   UsageResponse,
 } from "@/lib/types";
 
@@ -32,10 +37,20 @@ export class UpstreamError extends Error {
 }
 
 async function call(path: string, init?: RequestInit): Promise<Response> {
+  // Inject the access code from the gate cookie so every upstream request is
+  // automatically authenticated — callers don't need to think about it.
+  const cookieStore = await cookies();
+  const gate = cookieStore.get("votia_gate")?.value;
+  const gateHeader: Record<string, string> = gate ? { "x-access-code": gate } : {};
+
   try {
     return await fetch(`${BASE}${path}`, {
       ...init,
-      headers: { "content-type": "application/json", ...init?.headers },
+      headers: {
+        "content-type": "application/json",
+        ...gateHeader,
+        ...init?.headers,
+      },
       // Backend responses are request-specific; never cache at the fetch layer.
       cache: "no-store",
     });
@@ -86,7 +101,49 @@ export async function health(): Promise<HealthResponse> {
   return json<HealthResponse>(await call("/health"));
 }
 
-/** GET /usage — OpenRouter credit budget. */
+/** GET /usage — OpenRouter account credit budget (lifetime). */
 export async function usage(): Promise<UsageResponse> {
   return json<UsageResponse>(await call("/usage"));
+}
+
+/** GET /key — OpenRouter key spending limit + burned (ENERGÍA gauge). */
+export async function key(): Promise<KeyResponse> {
+  return json<KeyResponse>(await call("/key"));
+}
+
+/** GET /config — which models the system runs on. */
+export async function config(): Promise<ConfigResponse> {
+  return json<ConfigResponse>(await call("/config"));
+}
+
+/**
+ * GET /session/usage — accumulated spend for the caller's session.
+ * Relays the browser's session cookie so the backend resolves the right session
+ * (without it, the backend would mint a fresh, empty one).
+ */
+export async function sessionUsage(cookie?: string): Promise<SessionUsageResponse> {
+  const headers: Record<string, string> = {};
+  if (cookie) headers["cookie"] = cookie;
+  return json<SessionUsageResponse>(await call("/session/usage", { headers }));
+}
+
+/**
+ * GET /auth — validate an access code without spending LLM tokens.
+ * Used by the gate route handler to check the code the user typed.
+ * Does NOT go through `call()` — we pass the code directly, not from cookie.
+ */
+export async function validateCode(code: string): Promise<void> {
+  let res: Response;
+  try {
+    res = await fetch(`${BASE}/auth`, {
+      headers: { "content-type": "application/json", "x-access-code": code },
+      cache: "no-store",
+    });
+  } catch {
+    throw new UpstreamError(502, `Backend unreachable at ${BASE}`);
+  }
+  if (!res.ok) {
+    const detail = await res.text().catch(() => res.statusText);
+    throw new UpstreamError(res.status, detail || res.statusText);
+  }
 }

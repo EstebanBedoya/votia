@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dr_votia.application.refine_query import QueryRefiner
 from dr_votia.domain.conversation import Message, Role
-from dr_votia.domain.models import Tema
+from dr_votia.domain.models import LLMResult, Tema
 
 
 class StubLLM:
@@ -12,9 +12,9 @@ class StubLLM:
         self._reply = reply
         self.last_user = ""
 
-    def generate(self, *, system: str, user: str) -> str:
+    def generate(self, *, system: str, user: str) -> LLMResult:
         self.last_user = user
-        return self._reply
+        return LLMResult(text=self._reply)
 
 
 def test_parses_clean_json() -> None:

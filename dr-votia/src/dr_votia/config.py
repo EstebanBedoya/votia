@@ -65,3 +65,7 @@ class Settings(BaseSettings):
     rate_limit_bypass_token: SecretStr | None = None
     session_history_limit: int = 10
     session_cookie_name: str = "votia_session"
+
+    # Access gate. If set, all non-/health endpoints require an X-Access-Code
+    # header matching this value. Leave unset in local dev to disable the gate.
+    access_code: SecretStr | None = None

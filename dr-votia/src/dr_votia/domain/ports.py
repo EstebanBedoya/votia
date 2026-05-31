@@ -16,6 +16,7 @@ from dr_votia.domain.models import (
     Candidato,
     EmbeddedChunk,
     Fragment,
+    LLMResult,
     RetrievedChunk,
     Scorecard,
     Tema,
@@ -85,9 +86,13 @@ class ScoreRepository(Protocol):
 
 @runtime_checkable
 class LLMProvider(Protocol):
-    """Generates a grounded answer from a system prompt and a user message."""
+    """Generates a grounded answer from a system prompt and a user message.
 
-    def generate(self, *, system: str, user: str) -> str: ...
+    Returns an :class:`LLMResult` (text + usage) rather than a bare string, so
+    callers can account for per-request cost. Text-only callers read ``.text``.
+    """
+
+    def generate(self, *, system: str, user: str) -> LLMResult: ...
 
 
 @runtime_checkable
@@ -103,6 +108,15 @@ class SessionStore(Protocol):
     def exists(self, session_id: str) -> bool: ...
 
     def append(self, session_id: str, message: Message, *, ip: str | None = None) -> None: ...
+
+    def add_cost(self, session_id: str, cost_usd: float) -> float:
+        """Atomically add ``cost_usd`` to the session's running spend and return
+        the new total. Used to track per-session OpenRouter dollars."""
+        ...
+
+    def session_cost(self, session_id: str) -> float:
+        """The session's accumulated OpenRouter spend in USD."""
+        ...
 
     def history(self, session_id: str, *, limit: int = 10) -> list[Message]:
         """The most recent ``limit`` messages, in chronological order."""

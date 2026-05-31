@@ -45,10 +45,17 @@ class AnswerQuestion:
     def __call__(self, query: Query, *, history: list[Message] | None = None) -> Answer:
         # Guardrail short-circuits BEFORE any embedding, retrieval, or the
         # expensive model: a rejected question costs at most one cheap call.
-        if self._guardrail is not None and not self._guardrail.check(query.text).allowed:
-            return Answer(text=GUARD_REFUSAL, sources=[])
+        # cost_usd accumulates every LLM call this turn made (guardrail + refiner
+        # + answer) so the web layer can bill it to the session.
+        cost = 0.0
+        if self._guardrail is not None:
+            verdict = self._guardrail.check(query.text)
+            cost += verdict.usage.cost_usd or 0.0
+            if not verdict.allowed:
+                return Answer(text=GUARD_REFUSAL, sources=[], cost_usd=cost)
 
-        search_text, classified_tema = self._refine(query, history)
+        search_text, classified_tema, refine_cost = self._refine(query, history)
+        cost += refine_cost
         # An explicit caller filter wins; otherwise fall back to the classified one.
         tema = query.tema or classified_tema
 
@@ -61,14 +68,17 @@ class AnswerQuestion:
             tipo=query.tipo,
         )
         context = build_context(chunks)
-        text = self._llm.generate(
+        result = self._llm.generate(
             system=SYSTEM_PROMPT,
             user=build_user_message(query.text, context),
         )
-        return Answer(text=text, sources=chunks)
+        cost += result.usage.cost_usd or 0.0
+        return Answer(text=result.text, sources=chunks, cost_usd=round(cost, 6))
 
-    def _refine(self, query: Query, history: list[Message] | None) -> tuple[str, Tema | None]:
+    def _refine(
+        self, query: Query, history: list[Message] | None
+    ) -> tuple[str, Tema | None, float]:
         if self._refiner is None:
-            return query.text, None
+            return query.text, None, 0.0
         refined = self._refiner(query.text, history)
-        return refined.search_text, refined.tema
+        return refined.search_text, refined.tema, refined.usage.cost_usd or 0.0

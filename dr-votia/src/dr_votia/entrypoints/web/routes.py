@@ -7,7 +7,7 @@ so FastAPI runs them in a threadpool and the event loop stays free.
 
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 
 from dr_votia.domain.conversation import Message, Role
 from dr_votia.domain.models import Candidato, Query
@@ -16,26 +16,70 @@ from dr_votia.entrypoints.web.deps import (
     RateLimitDep,
     SessionDep,
     client_ip,
+    require_access_code,
 )
 from dr_votia.entrypoints.web.schemas import (
     ChatRequest,
     ChatResponse,
+    ConfigResponse,
+    KeyResponse,
     RadarResponse,
+    SessionUsageResponse,
     UsageResponse,
 )
 
-router = APIRouter()
+# Public — no gate (liveness probe, uptime monitors).
+public_router = APIRouter()
+
+# Protected — require a valid X-Access-Code header on every request.
+router = APIRouter(dependencies=[Depends(require_access_code)])
 
 
-@router.get("/health")
+@public_router.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
+@router.get("/auth")
+def auth() -> dict[str, bool]:
+    """Validate the access code without spending any LLM tokens.
+
+    The router-level dependency already enforced the check; returning here
+    means it passed.
+    """
+    return {"ok": True}
+
+
 @router.get("/usage", response_model=UsageResponse)
 def usage(container: ContainerDep) -> UsageResponse:
-    """OpenRouter credit usage for the 'ENERGÍA' gauge."""
+    """OpenRouter account credit usage (lifetime). Kept for backward compat."""
     return UsageResponse(**container.billing.credits())
+
+
+@router.get("/key", response_model=KeyResponse)
+def key(container: ContainerDep) -> KeyResponse:
+    """OpenRouter key spending limit + burned, for the 'ENERGÍA' gauge."""
+    return KeyResponse(**container.billing.key())
+
+
+@router.get("/config", response_model=ConfigResponse)
+def config(container: ContainerDep) -> ConfigResponse:
+    """Which models the system runs on — shown in the character panel."""
+    settings = container.settings
+    return ConfigResponse(
+        answer_model=settings.openrouter_answer_model,
+        score_model=settings.openrouter_score_model,
+        query_model=settings.openrouter_query_model,
+    )
+
+
+@router.get("/session/usage", response_model=SessionUsageResponse)
+def session_usage(container: ContainerDep, session_id: SessionDep) -> SessionUsageResponse:
+    """Accumulated OpenRouter spend for the current session."""
+    return SessionUsageResponse(
+        session_id=session_id,
+        cost_usd=container.sessions.session_cost(session_id),
+    )
 
 
 @router.post("/chat", response_model=ChatResponse)
@@ -65,7 +109,14 @@ def chat(
         history=history,
     )
     container.sessions.append(session_id, Message(role=Role.ASSISTANT, content=answer.text))
-    return ChatResponse.from_answer(answer, session_id=session_id)
+    # Bill this turn's OpenRouter spend to the session and read back the new total.
+    session_cost = container.sessions.add_cost(session_id, answer.cost_usd)
+    return ChatResponse.from_answer(
+        answer,
+        session_id=session_id,
+        model=container.settings.openrouter_answer_model,
+        session_cost_usd=session_cost,
+    )
 
 
 @router.get("/radar", response_model=list[RadarResponse])

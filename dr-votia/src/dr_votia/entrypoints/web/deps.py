@@ -78,3 +78,20 @@ def enforce_rate_limit(request: Request, container: ContainerDep, session_id: Se
 
 
 RateLimitDep = Annotated[None, Depends(enforce_rate_limit)]
+
+
+def require_access_code(request: Request, container: ContainerDep) -> None:
+    """Gate all protected endpoints with a shared access code.
+
+    If ``access_code`` is not configured the gate is open (dev mode).
+    Clients must send the code in the ``X-Access-Code`` header.
+    """
+    code = container.settings.access_code
+    if code is None:
+        return
+    header = request.headers.get("x-access-code")
+    if header != code.get_secret_value():
+        raise HTTPException(status_code=401, detail="Código de acceso inválido.")
+
+
+AccessCodeDep = Annotated[None, Depends(require_access_code)]

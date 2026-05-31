@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from dr_votia.application.answer_question import AnswerQuestion
 from dr_votia.domain.conversation import Message, Role
-from dr_votia.domain.models import Candidato, Query, RefinedQuery, Tema
+from dr_votia.domain.models import Candidato, LLMResult, Query, RefinedQuery, Tema
 
 
 class RecordingEmbeddings:
@@ -33,8 +33,8 @@ class RecordingStore:
 
 
 class StubLLM:
-    def generate(self, *, system: str, user: str) -> str:
-        return "respuesta"
+    def generate(self, *, system: str, user: str) -> LLMResult:
+        return LLMResult(text="respuesta")
 
 
 class StubRefiner:

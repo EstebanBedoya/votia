@@ -43,6 +43,7 @@ class InMemorySessionStore:
     def __init__(self) -> None:
         self._sessions: set[str] = set()
         self.turns: list[tuple[str, Message, str | None]] = []
+        self.costs: dict[str, float] = {}
 
     def create(self) -> Session:
         sid = str(uuid.uuid4())
@@ -54,6 +55,13 @@ class InMemorySessionStore:
 
     def append(self, session_id: str, message: Message, *, ip: str | None = None) -> None:
         self.turns.append((session_id, message, ip))
+
+    def add_cost(self, session_id: str, cost_usd: float) -> float:
+        self.costs[session_id] = self.costs.get(session_id, 0.0) + cost_usd
+        return self.costs[session_id]
+
+    def session_cost(self, session_id: str) -> float:
+        return self.costs.get(session_id, 0.0)
 
     def history(self, session_id: str, *, limit: int = 10) -> list[Message]:
         msgs = [m for sid, m, _ in self.turns if sid == session_id]
@@ -85,6 +93,8 @@ class FakeContainer:
             session_cookie_name="votia_session",
             rate_limit_bypass_token=bypass_token,
             session_history_limit=10,
+            access_code=None,
+            openrouter_answer_model="test/answer-model",
         )
 
 

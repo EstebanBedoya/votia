@@ -77,7 +77,9 @@ class ScoreCandidates:
         self._k = k
 
     def __call__(self, candidato: Candidato) -> Scorecard:
-        ejes = [self._score_eje(candidato, eje) for eje in RADAR_EJES]
+        scored = [self._score_eje(candidato, eje) for eje in RADAR_EJES]
+        ejes = [metrics for metrics, _ in scored]
+        cost = sum(eje_cost for _, eje_cost in scored)
         cobertura = sum(1 for e in ejes if e.volumen_propuestas > 0)
         hhi = _herfindahl([e.volumen_propuestas for e in ejes])
         presencia = self._store.count(candidato=candidato, tipo=Tipo.DATO_HISTORICO)
@@ -88,26 +90,30 @@ class ScoreCandidates:
             concentracion_hhi=hhi,
             presencia_historica=presencia,
             computed_at=datetime.now(UTC).isoformat(),
+            cost_usd=round(cost, 6),
         )
 
-    def _score_eje(self, candidato: Candidato, eje: Tema) -> EjeMetrics:
+    def _score_eje(self, candidato: Candidato, eje: Tema) -> tuple[EjeMetrics, float]:
         volumen = self._store.count(candidato=candidato, tema=eje, tipo=Tipo.PROPUESTA)
 
         # Absence is deterministic — we KNOW there are zero proposals. Score it a
         # confident 1 (the scale's "ausencia total") without spending LLM calls.
         if volumen == 0:
-            return EjeMetrics(
-                eje=eje,
-                volumen_propuestas=0,
-                solidez=1.0,
-                solidez_std=0.0,
-                solidez_runs=[],
-                confianza=1.0,
-                densidad_evidencia=0.0,
-                anclaje_nacional=1,
-                coherencia_gestion=None,
-                justificacion="Ausencia total de propuesta en el eje: 0 propuestas indexadas.",
-                fuentes=[],
+            return (
+                EjeMetrics(
+                    eje=eje,
+                    volumen_propuestas=0,
+                    solidez=1.0,
+                    solidez_std=0.0,
+                    solidez_runs=[],
+                    confianza=1.0,
+                    densidad_evidencia=0.0,
+                    anclaje_nacional=1,
+                    coherencia_gestion=None,
+                    justificacion="Ausencia total de propuesta en el eje: 0 propuestas indexadas.",
+                    fuentes=[],
+                ),
+                0.0,
             )
 
         embedding = self._embeddings.embed_query(EJE_SEED_QUERIES[eje])
@@ -132,13 +138,11 @@ class ScoreCandidates:
             nacional=nacional,
             historico=historico,
         )
-        runs = [
-            run
-            for _ in range(self._runs)
-            if (run := _parse_run(self._llm.generate(system=SCORE_SYSTEM, user=user))) is not None
-        ]
+        results = [self._llm.generate(system=SCORE_SYSTEM, user=user) for _ in range(self._runs)]
+        eje_cost = sum(r.usage.cost_usd or 0.0 for r in results)
+        runs = [run for r in results if (run := _parse_run(r.text)) is not None]
         fuentes = _unique_fuentes([*propuestas, *historico])
-        return _aggregate(eje, volumen, runs, fuentes)
+        return _aggregate(eje, volumen, runs, fuentes), eje_cost
 
 
 def _aggregate(eje: Tema, volumen: int, runs: list[_ScoreRun], fuentes: list[str]) -> EjeMetrics:

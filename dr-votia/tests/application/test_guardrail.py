@@ -11,7 +11,7 @@ from dr_votia.application.answer_question import AnswerQuestion
 from dr_votia.application.guardrail import Guardrail
 from dr_votia.application.prompts import GUARD_REFUSAL
 from dr_votia.domain.guard import GuardCategory
-from dr_votia.domain.models import Query
+from dr_votia.domain.models import LLMResult, Query
 
 
 class FakeLLM:
@@ -22,11 +22,11 @@ class FakeLLM:
         self._raises = raises
         self.calls = 0
 
-    def generate(self, *, system: str, user: str) -> str:
+    def generate(self, *, system: str, user: str) -> LLMResult:
         self.calls += 1
         if self._raises:
             raise RuntimeError("model down")
-        return self._response
+        return LLMResult(text=self._response)
 
 
 def test_injection_blocks_without_calling_model() -> None:

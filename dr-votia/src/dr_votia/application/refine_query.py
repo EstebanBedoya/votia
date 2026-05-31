@@ -16,7 +16,7 @@ import re
 
 from dr_votia.application.prompts import REFINE_SYSTEM, build_refine_user_message
 from dr_votia.domain.conversation import Message
-from dr_votia.domain.models import RefinedQuery, Tema
+from dr_votia.domain.models import RefinedQuery, Tema, TokenUsage
 from dr_votia.domain.ports import LLMProvider
 
 _JSON_OBJECT = re.compile(r"\{.*\}", re.DOTALL)
@@ -27,25 +27,25 @@ class QueryRefiner:
         self._llm = llm
 
     def __call__(self, question: str, history: list[Message] | None = None) -> RefinedQuery:
-        raw = self._llm.generate(
+        result = self._llm.generate(
             system=REFINE_SYSTEM, user=build_refine_user_message(question, history)
         )
-        return _parse(raw, fallback=question)
+        return _parse(result.text, fallback=question, usage=result.usage)
 
 
-def _parse(raw: str, *, fallback: str) -> RefinedQuery:
+def _parse(raw: str, *, fallback: str, usage: TokenUsage) -> RefinedQuery:
     match = _JSON_OBJECT.search(raw)
     if match is None:
-        return RefinedQuery(search_text=fallback)
+        return RefinedQuery(search_text=fallback, usage=usage)
     try:
         data = json.loads(match.group(0))
     except (json.JSONDecodeError, ValueError):
-        return RefinedQuery(search_text=fallback)
+        return RefinedQuery(search_text=fallback, usage=usage)
     if not isinstance(data, dict):
-        return RefinedQuery(search_text=fallback)
+        return RefinedQuery(search_text=fallback, usage=usage)
 
     search_text = str(data.get("search_text") or "").strip() or fallback
-    return RefinedQuery(search_text=search_text, tema=_coerce_tema(data.get("tema")))
+    return RefinedQuery(search_text=search_text, tema=_coerce_tema(data.get("tema")), usage=usage)
 
 
 def _coerce_tema(value: object) -> Tema | None:

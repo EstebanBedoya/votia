@@ -6,6 +6,7 @@
 import Image from "next/image";
 
 import { EnergyBar } from "@/components/EnergyBar";
+import { SessionStats } from "@/components/SessionStats";
 
 export interface CharacterPanelProps {
   /** Short greeting shown in the speech bubble. */
@@ -46,6 +47,7 @@ export function CharacterPanel({ greeting = "¡Datos a la mano!" }: CharacterPan
         <div className="mt-3">
           <EnergyBar />
         </div>
+        <SessionStats />
       </div>
     </aside>
   );

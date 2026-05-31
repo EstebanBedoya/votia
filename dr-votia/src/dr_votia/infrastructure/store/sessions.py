@@ -50,6 +50,27 @@ class SupabaseSessionStore:
             }
         ).execute()
 
+    def add_cost(self, session_id: str, cost_usd: float) -> float:
+        # Atomic increment via a Postgres function (see migration 0002): a
+        # read-modify-write in Python would race between concurrent turns of the
+        # same session. The RPC adds and returns the new total in one round-trip.
+        response = self._client.rpc(
+            "increment_session_cost",
+            {"p_session_id": session_id, "p_delta": cost_usd},
+        ).execute()
+        return float(cast("Any", response.data) or 0.0)
+
+    def session_cost(self, session_id: str) -> float:
+        response = (
+            self._client.table(SESSIONS)
+            .select("total_cost_usd")
+            .eq("id", session_id)
+            .limit(1)
+            .execute()
+        )
+        rows = cast("list[dict[str, Any]]", response.data or [])
+        return float(rows[0]["total_cost_usd"]) if rows else 0.0
+
     def history(self, session_id: str, *, limit: int = 10) -> list[Message]:
         response = (
             self._client.table(MESSAGES)

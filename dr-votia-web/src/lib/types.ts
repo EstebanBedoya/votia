@@ -52,6 +52,12 @@ export interface ChatResponse {
   respuesta: string;
   fuentes: Source[];
   session_id: string | null;
+  /** USD spent on this turn (guardrail + refiner + answer calls). */
+  cost_usd: number;
+  /** Answer model that served this turn. */
+  model: string | null;
+  /** Running USD total for the session after this turn. */
+  session_cost_usd: number | null;
 }
 
 /** One axis of a candidate's scorecard. Mirrors EjeScoreDTO. */
@@ -87,13 +93,40 @@ export interface HealthResponse {
   status: string;
 }
 
-/** GET /usage — OpenRouter credit budget for the "ENERGÍA" gauge. */
+/** GET /usage — OpenRouter account credit budget (lifetime). */
 export interface UsageResponse {
   total: number;
   used: number;
   remaining: number;
   /** Remaining as a percentage, or null when the account has no credit cap. */
   pct: number | null;
+}
+
+/** GET /key — OpenRouter key spending limit, powers the "ENERGÍA" gauge. */
+export interface KeyResponse {
+  label: string;
+  /** USD spent on this key. */
+  usage: number;
+  /** USD spending cap, or null when the key is uncapped. */
+  limit: number | null;
+  /** USD left before the cap, or null when uncapped. */
+  limit_remaining: number | null;
+  is_free_tier: boolean;
+  /** Remaining as a percentage of the limit, or null when uncapped. */
+  pct: number | null;
+}
+
+/** GET /session/usage — accumulated OpenRouter spend for the current session. */
+export interface SessionUsageResponse {
+  session_id: string;
+  cost_usd: number;
+}
+
+/** GET /config — which models the system runs on. */
+export interface ConfigResponse {
+  answer_model: string;
+  score_model: string;
+  query_model: string;
 }
 
 /** Shape returned to the browser when an upstream call fails. */

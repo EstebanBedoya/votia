@@ -56,14 +56,14 @@ class Guardrail:
 
     def _check_topic(self, question: str) -> GuardVerdict:
         try:
-            raw = self._llm.generate(system=GUARD_SYSTEM, user=question)
+            result = self._llm.generate(system=GUARD_SYSTEM, user=question)
         except Exception:  # noqa: BLE001 — availability over strictness for scope
             return GuardVerdict.ok()
 
-        on_topic, reason = _parse(raw)
+        on_topic, reason = _parse(result.text)
         if on_topic:
-            return GuardVerdict.ok()
-        return GuardVerdict.blocked(GuardCategory.OFF_TOPIC, reason)
+            return GuardVerdict.ok(usage=result.usage)
+        return GuardVerdict.blocked(GuardCategory.OFF_TOPIC, reason, usage=result.usage)
 
 
 def _parse(raw: str) -> tuple[bool, str]:

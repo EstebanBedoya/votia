@@ -7,7 +7,7 @@ domain is leaking infrastructure — it isn't.
 from __future__ import annotations
 
 from dr_votia.application.answer_question import AnswerQuestion
-from dr_votia.domain.models import Candidato, Query, RetrievedChunk, Tipo
+from dr_votia.domain.models import Candidato, LLMResult, Query, RetrievedChunk, Tipo
 
 
 class FakeEmbeddings:
@@ -36,10 +36,10 @@ class FakeLLM:
         self.system = ""
         self.user = ""
 
-    def generate(self, *, system: str, user: str) -> str:
+    def generate(self, *, system: str, user: str) -> LLMResult:
         self.system = system
         self.user = user
-        return "respuesta generada"
+        return LLMResult(text="respuesta generada")
 
 
 def _sample_chunk() -> RetrievedChunk:

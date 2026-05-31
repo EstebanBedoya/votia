@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from types import SimpleNamespace
+
 from fastapi.testclient import TestClient
 
 from dr_votia.domain.models import Candidato, EjeMetrics, Scorecard, Tema
@@ -53,6 +55,8 @@ class FakeRepo:
 class FakeContainer:
     def __init__(self, repo: FakeRepo) -> None:
         self.score_repo = repo
+        # access_code=None keeps the protected-router gate open in tests.
+        self.settings = SimpleNamespace(access_code=None)
 
 
 def _client(repo: FakeRepo) -> TestClient:

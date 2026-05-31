@@ -7,8 +7,10 @@ the vocabulary used to express that decision.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import StrEnum
+
+from dr_votia.domain.models import TokenUsage
 
 
 class GuardCategory(StrEnum):
@@ -26,11 +28,25 @@ class GuardVerdict:
     allowed: bool
     category: GuardCategory
     reason: str = ""
+    # Cost of the topical-scope LLM call (empty when the verdict was reached by
+    # the deterministic injection regex, or when the call failed open).
+    usage: TokenUsage = field(default_factory=TokenUsage.empty)
 
     @classmethod
-    def ok(cls) -> GuardVerdict:
-        return cls(allowed=True, category=GuardCategory.ALLOWED)
+    def ok(cls, *, usage: TokenUsage | None = None) -> GuardVerdict:
+        return cls(
+            allowed=True,
+            category=GuardCategory.ALLOWED,
+            usage=usage or TokenUsage.empty(),
+        )
 
     @classmethod
-    def blocked(cls, category: GuardCategory, reason: str = "") -> GuardVerdict:
-        return cls(allowed=False, category=category, reason=reason)
+    def blocked(
+        cls, category: GuardCategory, reason: str = "", *, usage: TokenUsage | None = None
+    ) -> GuardVerdict:
+        return cls(
+            allowed=False,
+            category=category,
+            reason=reason,
+            usage=usage or TokenUsage.empty(),
+        )
