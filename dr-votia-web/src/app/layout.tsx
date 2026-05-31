@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { Space_Grotesk, Hanken_Grotesk, JetBrains_Mono } from "next/font/google";
+
+import { artUrl } from "@/lib/assets";
 
 import "./globals.css";
 
@@ -35,6 +37,12 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html
       lang="es"
       className={`${spaceGrotesk.variable} ${hankenGrotesk.variable} ${jetbrainsMono.variable}`}
+      style={
+        {
+          "--art-clouds": `url(${artUrl("clouds.png")})`,
+          "--art-mountains": `url(${artUrl("mountains.png")})`,
+        } as CSSProperties
+      }
     >
       <body>{children}</body>
     </html>

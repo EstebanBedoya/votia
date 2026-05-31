@@ -7,6 +7,7 @@ import Image from "next/image";
 
 import { EnergyBar } from "@/components/EnergyBar";
 import { SessionStats } from "@/components/SessionStats";
+import { artUrl } from "@/lib/assets";
 
 export interface CharacterPanelProps {
   /** Short greeting shown in the speech bubble. */
@@ -22,7 +23,7 @@ export function CharacterPanel({ greeting = "¡Datos a la mano!" }: CharacterPan
           <span className="font-mono text-xs font-bold text-coffee">{greeting}</span>
         </div>
         <Image
-          src="/art/flag.png"
+          src={artUrl("flag.png")}
           alt="Bandera de Colombia"
           width={104}
           height={76}
@@ -32,7 +33,7 @@ export function CharacterPanel({ greeting = "¡Datos a la mano!" }: CharacterPan
 
       {/* Parrot */}
       <Image
-        src="/art/guacamayo.png"
+        src={artUrl("guacamayo.png")}
         alt="Guacamayo, el asistente"
         width={224}
         height={296}

@@ -34,8 +34,13 @@ services:
       context: ./dr-votia-web
       args:
         API_BASE_URL: http://backend:8000
+        # NEXT_PUBLIC_ vars are inlined at build time; reuse the existing
+        # SUPABASE_URL so the art bucket URLs resolve in the client bundle.
+        NEXT_PUBLIC_SUPABASE_URL: ${SUPABASE_URL}
     environment:
       API_BASE_URL: http://backend:8000
+      # Also at runtime so server components (layout/page) build the same URLs.
+      NEXT_PUBLIC_SUPABASE_URL: ${SUPABASE_URL}
     ports:
       - "3002:3002"
     depends_on:

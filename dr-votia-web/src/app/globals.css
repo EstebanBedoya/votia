@@ -102,7 +102,7 @@ body::before {
     /* faint pixel scanline texture */
     repeating-linear-gradient(0deg, rgb(45 27 16 / 0.025) 0 2px, transparent 2px 4px),
     /* clouds drifting across the upper sky */
-    url("/art/clouds.png") repeat-x 0 8%,
+    var(--art-clouds) repeat-x 0 8%,
     /* sky → land vertical gradient (quantized into pixel bands) */
     linear-gradient(
       180deg,
@@ -127,7 +127,7 @@ body::after {
   height: 240px;
   z-index: -1;
   pointer-events: none;
-  background: url("/art/mountains.png") repeat-x bottom / 480px auto;
+  background: var(--art-mountains) repeat-x bottom / 480px auto;
   image-rendering: pixelated;
   opacity: 0.92;
 }

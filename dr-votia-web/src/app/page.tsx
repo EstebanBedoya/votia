@@ -2,13 +2,14 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { PixelButton } from "@/components/PixelButton";
+import { artUrl } from "@/lib/assets";
 
 export default function Home() {
   return (
     <main className="grid min-h-screen place-items-center p-4">
       <div className="pixel-window w-full max-w-2xl p-8 text-center md:p-12">
         <Image
-          src="/art/guacamayo.png"
+          src={artUrl("guacamayo.png")}
           alt="Guacamayo"
           width={248}
           height={330}

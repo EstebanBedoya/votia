@@ -14,6 +14,7 @@ import { PixelButton } from "@/components/PixelButton";
 import { PixelIcon } from "@/components/PixelIcon";
 import { QuickReplyChip } from "@/components/QuickReplyChip";
 import { useChat } from "@/hooks/useChat";
+import { artUrl } from "@/lib/assets";
 import { CANDIDATOS } from "@/lib/constants";
 import type { Candidato } from "@/lib/types";
 
@@ -89,7 +90,7 @@ export function ChatWindow() {
         {messages.length === 0 && !loading && (
           <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
             <Image
-              src="/art/guacamayo.png"
+              src={artUrl("guacamayo.png")}
               alt="Guacamayo"
               width={120}
               height={160}

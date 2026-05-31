@@ -20,6 +20,11 @@ COPY . .
 ARG API_BASE_URL=http://backend:8000
 ENV API_BASE_URL=$API_BASE_URL
 
+# NEXT_PUBLIC_ vars are inlined into the client bundle at build time, so this
+# must be present during `pnpm build`, not only at runtime.
+ARG NEXT_PUBLIC_SUPABASE_URL
+ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
+
 RUN pnpm build
 
 # ── runner ────────────────────────────────────────────────────────────────────
