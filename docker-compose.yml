@@ -1,0 +1,44 @@
+services:
+  backend:
+    build:
+      context: ./dr-votia
+    environment:
+      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_SERVICE_KEY: ${SUPABASE_SERVICE_KEY}
+      VOYAGE_API_KEY: ${VOYAGE_API_KEY}
+      VOYAGE_MODEL: ${VOYAGE_MODEL:-voyage-3.5}
+      VOYAGE_TOKENS_PER_MIN: ${VOYAGE_TOKENS_PER_MIN:-10000}
+      VOYAGE_REQUESTS_PER_MIN: ${VOYAGE_REQUESTS_PER_MIN:-3}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
+      OPENROUTER_ANSWER_MODEL: ${OPENROUTER_ANSWER_MODEL:-anthropic/claude-sonnet-4.6}
+      OPENROUTER_SCORE_MODEL: ${OPENROUTER_SCORE_MODEL:-anthropic/claude-sonnet-4.6}
+      OPENROUTER_QUERY_MODEL: ${OPENROUTER_QUERY_MODEL:-deepseek/deepseek-v4-flash}
+      OPENROUTER_ANSWER_MAX_TOKENS: ${OPENROUTER_ANSWER_MAX_TOKENS:-1536}
+      RATE_LIMIT_ENABLED: ${RATE_LIMIT_ENABLED:-true}
+      RATE_LIMIT_PER_IP: ${RATE_LIMIT_PER_IP:-30}
+      RATE_LIMIT_PER_SESSION: ${RATE_LIMIT_PER_SESSION:-20}
+      RATE_LIMIT_WINDOW_SECONDS: ${RATE_LIMIT_WINDOW_SECONDS:-60}
+      RATE_LIMIT_BYPASS_TOKEN: ${RATE_LIMIT_BYPASS_TOKEN:-}
+      ACCESS_CODE: ${ACCESS_CODE}
+    # No ports exposed — only reachable from within this compose network.
+    # The frontend BFF calls http://backend:8000 internally.
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  frontend:
+    build:
+      context: ./dr-votia-web
+      args:
+        API_BASE_URL: http://backend:8000
+    environment:
+      API_BASE_URL: http://backend:8000
+    ports:
+      - "3002:3002"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
